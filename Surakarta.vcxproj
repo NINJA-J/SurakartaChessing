@@ -131,6 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ChessBoard.cpp" />
     <ClCompile Include="Define.cpp" />
     <ClCompile Include="Eveluation.cpp" />
     <ClCompile Include="MainFrm.cpp" />
@@ -153,6 +154,7 @@
     <ResourceCompile Include="Surakarta.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ChessBoard.h" />
     <ClInclude Include="Define.h" />
     <ClInclude Include="Eveluation.h" />
     <ClInclude Include="MainFrm.h" />

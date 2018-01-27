@@ -324,3 +324,65 @@ int CMoveGenerator::CreatePossibleMove(BYTE position[6][6],int nPly,int nSide) {
 	}
 	return m_nMoveCount;
 }
+
+int CMoveGenerator::AnalysisAttackInfo(BYTE position[6][6],int &bNum, int & bAttack, int & bProtect, int & bMove, int &rNum, int & rAttack, int & rProtect, int & rMove)
+{
+	memcpy(this->position, position, sizeof(BYTE[6][6]));
+	bAttack = bProtect = rAttack = rProtect = bMove = rMove = 0;
+	for (int arc = INNER; arc <= OUTER; arc++) {
+		for (int i = 0; i < 24; i++) {
+			if (*loop[arc][i]) {
+				checkStart[arc] = i;//sssssss
+				break;
+			}
+		}
+	}
+
+	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
+	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
+		if (checkStart[arc] != -1) { //判断当前弧上有点
+			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
+				s = checkStart[arc];
+				e = (s + dir) % 24;
+
+				colorS = *loop[arc][s];//保留起点颜色，起点置空，和旧函数思路一样
+				*loop[arc][s] = 0;
+
+				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
+					colorE = *loop[arc][e];
+					if (*loop[arc][e]) {
+						if (s / 6 != e / 6)
+							colorS == colorE ?
+							(colorS == BLACK ? bAttack++ : rAttack++) :
+							(colorS == BLACK ? bProtect++ : rProtect++);
+
+						*loop[arc][s] = colorS;//恢复起点颜色，继续搜索
+						s = e; //终点置为新起点
+						colorS = *loop[arc][s];//保留起点颜色，起点置空，和旧函数思路一样
+						*loop[arc][s] = 0;
+					}
+				}
+				if (!*loop[arc][s]) *loop[arc][s] = colorS;
+			}
+		}
+	}
+
+	//生成走子着法
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 6; j++) {
+			if (position[i][j] ) {
+				position[i][j] == BLACK ? bNum++ : rNum++;
+				for (int x = -1; x <= 1; x++) {
+					for (int y = -1; y <= 1; y++) {
+						if (0 <= x + i && x + i < 6 &&
+							0 <= y + j && y + j < 6 &&
+							position[x + i][y + j] == 0) {
+							position[x + i][y + j] == BLACK ? bMove++ : rMove++;
+						}
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
