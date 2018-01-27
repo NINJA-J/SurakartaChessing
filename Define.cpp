@@ -1,0 +1,27 @@
+// Define.cpp: implementation of the Define class.
+//
+//////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
+#include "Surakarta.h"
+#include "Define.h"
+
+#ifdef _DEBUG
+#undef THIS_FILE
+static char THIS_FILE[]=__FILE__;
+#define new DEBUG_NEW
+#endif
+
+//////////////////////////////////////////////////////////////////////
+// Construction/Destruction
+//////////////////////////////////////////////////////////////////////
+
+Define::Define()
+{
+
+}
+
+Define::~Define()
+{
+
+}
