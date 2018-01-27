@@ -52,7 +52,7 @@ int CEveluation::Eveluate(BYTE position[6][6], BOOL IsBlackturn)
 	}
 	else {
 		RArcValue = GetArcValue(position, IsBlackturn);
-		RArcValue = GetArcValue(position, 1);
+		BArcValue = GetArcValue(position, 1);
 	}
 	BlackValue = BNum * 6 + BMoveValue * 1 + BAttactValue * 2 + BPosValue * 1 + BArcValue * 1;//abcd分别表示各个评分因素的权值
 	RedValue = RNum * 6 + RMoveValue * 1 + RAttactValue * 2 + RPosValue * 1 + RArcValue * 1;

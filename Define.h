@@ -19,6 +19,7 @@ typedef struct _chessmanposition
 {
 	BYTE x;
 	BYTE y;
+	struct _chessmanposition() {};
 	struct _chessmanposition(BYTE _x, BYTE _y) :x(_x), y(_y) {};
 	//BYTE arc;//不需要，可以由x、y的坐标从棋盘上判断是否挨着弧
 }CHESSNAMPOS;
@@ -34,6 +35,7 @@ typedef struct _chessmove
 		return (From.x == move.From.x && From.y == move.From.y && To.x == move.To.x && To.y == move.To.y);
 	}
 
+	struct _chessmove() {};
 	struct _chessmove(BYTE xf, BYTE yf, BYTE xt, BYTE yt, short side): From(xf,yf),To(xt,yt),Side(side){
 		Score = 0;
 		isMove = true;
