@@ -20,7 +20,7 @@ private:
 
 	stack<CHESSMOVE> moves;
 
-	static const int arcLoop[2][24][2];//64-75的定义添加到cpp文件里
+	static const int arcLoop[2][24][2];//64-75的定义添加到cpp文件里 tt
 
 	int m_nMoveCount;
 	CHESSMOVE m_nMoveList[8][100];
