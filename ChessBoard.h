@@ -52,6 +52,7 @@ public:
 	int value();
 
 	void move(int fX, int fY, int tX, int tY);
+	void move(CHESSMOVE move);
 	void unMove();
 	int isGameOver(bool isBlackPlaying);//在搜索中用到，表示某一方的搜索树的终局
 

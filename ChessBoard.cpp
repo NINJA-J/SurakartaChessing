@@ -375,6 +375,10 @@ void ChessBoard::move(int fX, int fY, int tX, int tY) {
 	isBlackTurn = !isBlackTurn;
 }
 
+void ChessBoard::move(CHESSMOVE move) {
+	this->move(move.From.x, move.From.y, move.To.x, move.To.y);
+}
+
 void ChessBoard::unMove() {
 	CHESSMOVE lastMove = moves.top();
 	moves.pop();
