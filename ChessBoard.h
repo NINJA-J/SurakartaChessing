@@ -19,18 +19,18 @@ class ChessBoard {
 private:
 	BYTE position[6][6];
 	BYTE* loop[2][24];
-	int checkStart[2];
+	int loopStart[2];
 	bool isBlackTurn;
 
+	int moveCount;
+	CHESSMOVE** moveList;
 	stack<CHESSMOVE> moves;
 
 	static const int arcLoop[2][24][2];//64-75的定义添加到cpp文件里 tt
 	static const int posScore[3][6][6];
+	static const BYTE defaultStartBoard[6][6];
 
-	int m_nMoveCount;
-	CHESSMOVE m_nMoveList[8][100];
-
-	int addMove(int nFromX, int nToX, int nFromY, int nToY, int nPly);
+	int addMove(int nFromX, int nToX, int nFromY, int nToY);
 
 	int bValue ,rValue ;//总的评估值
 	int bPValue , rPValue ;
@@ -42,11 +42,12 @@ private:
 public:
 	ChessBoard(bool isBlackFirst = true);
 	ChessBoard(BYTE position[6][6], bool isBlackFirst = true);
-	bool initTurn(bool isBlackFirst);
+	bool setChessPosition(const BYTE position[6][6]);
+	bool setChessTurn(bool isBlackTurn);
 
 	bool isValidMove(int nFromX, int nFromY, int nToX, int nToY);
 	//产生给定棋盘上的所有合法的走法
-	int createPossibleMove(int nPly, int nSide);
+	int createPossibleMove(CHESSMOVE* moveList, int nSide);
 	int analysis();
 	int value();
 

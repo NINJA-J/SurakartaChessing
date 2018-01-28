@@ -134,6 +134,8 @@ int CNegaScout::NegaScout_ABTree(int depth, int m_Type, int alpha, int beta) {
 	static const int MAX_INT = 0x7fffffff;//int的最大值
 	static const int MIN_INT = 0x80000000;//int的最小值
 
+	CHESSMOVE moveList[200];
+
 	if (depth == m_nMaxDepth) { //在第一层时自动设定alpha和beta，因为这一层肯定是maxint和minint，减少searchagoodmove里的代码量
 		alpha = MIN_INT;
 		beta = MAX_INT;

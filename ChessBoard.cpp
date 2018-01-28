@@ -39,47 +39,68 @@ const int ChessBoard::posScore[3][6][6] = {
 	}
 };
 
-int ChessBoard::addMove(int nFromX, int nToX, int nFromY, int nToY, int nPly) {
-	m_nMoveList[nPly][m_nMoveCount].From.x = nFromX;
-	m_nMoveList[nPly][m_nMoveCount].From.y = nFromY;
-	m_nMoveList[nPly][m_nMoveCount].To.x = nToX;
-	m_nMoveList[nPly][m_nMoveCount].To.y = nToY;
+const BYTE ChessBoard::defaultStartBoard[6][6] = {
+	{1,1,1,1,1,1},
+	{1,1,1,1,1,1},
+	{0,0,0,0,0,0},
+	{0,0,0,0,0,0},
+	{2,2,2,2,2,2},
+	{2,2,2,2,2,2}
+};
 
-	m_nMoveCount++;
-	return m_nMoveCount;
+int ChessBoard::addMove(int nFromX, int nToX, int nFromY, int nToY) {
+	if (moveList == NULL) return -1;
+
+	(*moveList)[moveCount].From.x = nFromX;
+	(*moveList)[moveCount].From.y = nFromY;
+	(*moveList)[moveCount].To.x = nToX;
+	(*moveList)[moveCount].To.y = nToY;
+
+	moveCount++;
+	return moveCount;
 }
 
 ChessBoard::ChessBoard(bool isBlackFirst) {
-	for (int i = 0; i < 2; i++) for (int j = 0; j < 6; j++) position[i][j] = BLACK;
-	for (int i = 2; i < 4; i++) for (int j = 0; j < 6; j++) position[i][j] = NOCHESS;
-	for (int i = 4; i < 6; i++) for (int j = 0; j < 6; j++) position[i][j] = RED;
+	setChessPosition(defaultStartBoard);
+	setChessTurn(isBlackFirst);
 
 	for (int i = 0; i < 24; i++) {
 		for (int arc = INNER; arc <= OUTER; arc++) {
 			loop[arc][i] = &(this->position[arcLoop[arc][i][X]][arcLoop[arc][i][Y]]);
 		}
 	}
-	checkStart[INNER] = checkStart[OUTER] = -1;
-	isBlackTurn = isBlackFirst;
-
-	bNum = rNum = 12;
+	loopStart[INNER] = loopStart[OUTER] = -1;
+	moveList = NULL;
 }
 
 ChessBoard::ChessBoard(BYTE position[6][6], bool isBlackFirst) {
-	memcpy(this->position, position, sizeof(BYTE[6][6]));
+	setChessPosition(position);
+	setChessTurn(isBlackFirst);
 
 	for (int i = 0; i < 24; i++) {
 		for (int arc = INNER; arc <= OUTER; arc++) {
 			loop[arc][i] = &(this->position[arcLoop[arc][i][X]][arcLoop[arc][i][Y]]);
 		}
 	}
-	checkStart[INNER] = checkStart[OUTER] = -1;
-	isBlackTurn = isBlackFirst;
+	loopStart[INNER] = loopStart[OUTER] = -1;
+	moveList = NULL;
 }
 
-bool ChessBoard::initTurn(bool isBlackFirst) {
-	if (moves.size() > 0) return false;
-	isBlackTurn = isBlackFirst;
+bool ChessBoard::setChessPosition(const BYTE position[6][6]) {
+	bNum = rNum = 0;
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 6; j++) {
+			this->position[i][j] = position[i][j];
+			if (position[i][j] == BLACK) bNum++;
+			if (position[i][j] == RED) rNum++;
+		}
+	}
+	return true;
+}
+
+bool ChessBoard::setChessTurn(bool isBlackTurn) {
+	if (moves.size() > 0)return false;
+	this->isBlackTurn = isBlackTurn;
 	return true;
 }
 
@@ -207,13 +228,14 @@ bool ChessBoard::isValidMove(int nFromX, int nFromY, int nToX, int nToY)
 	}
 }
 
-int ChessBoard::createPossibleMove(int nPly, int nSide) {
-	m_nMoveCount = 0;
+int ChessBoard::createPossibleMove(CHESSMOVE* moveList, int nSide) {
+	moveCount = 0;
+	*(this->moveList) = moveList;
 	memcpy(this->position, position, sizeof(BYTE[6][6]));
 	for (int arc = INNER; arc <= OUTER; arc++) {
 		for (int i = 0; i < 24; i++) {
 			if (*loop[arc][i]) {
-				checkStart[arc] = i;//sssssss
+				loopStart[arc] = i;//sssssss
 				break;
 			}
 		}
@@ -221,9 +243,9 @@ int ChessBoard::createPossibleMove(int nPly, int nSide) {
 
 	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
 	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
-		if (checkStart[arc] != -1) { //判断当前弧上有点
+		if (loopStart[arc] != -1) { //判断当前弧上有点
 			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
-				s = checkStart[arc];
+				s = loopStart[arc];
 				e = (s + dir) % 24;
 				colorS = *loop[arc][s];//保留起点颜色，起点置空，和旧函数思路一样
 				*loop[arc][s] = 0;
@@ -234,8 +256,7 @@ int ChessBoard::createPossibleMove(int nPly, int nSide) {
 							addMove(arcLoop[arc][s][X],
 								arcLoop[arc][s][Y],
 								arcLoop[arc][e][X],
-								arcLoop[arc][e][Y],
-								nPly);
+								arcLoop[arc][e][Y]);
 						}
 						*loop[arc][s] = colorS;//恢复起点颜色，继续搜索
 						s = e; //终点置为新起点
@@ -257,7 +278,7 @@ int ChessBoard::createPossibleMove(int nPly, int nSide) {
 						if (0 <= x + i && x + i < 6 &&
 							0 <= y + j && y + j < 6 &&
 							position[x + i][y + j] == 0) {
-							addMove(i, j, x + i, y + j, nPly);
+							addMove(i, j, x + i, y + j);
 
 						}
 					}
@@ -265,7 +286,8 @@ int ChessBoard::createPossibleMove(int nPly, int nSide) {
 			}
 		}
 	}
-	return m_nMoveCount;
+	moveList = NULL;
+	return moveCount;
 }
 
 int ChessBoard::analysis() {
@@ -275,7 +297,7 @@ int ChessBoard::analysis() {
 	for (int arc = INNER; arc <= OUTER; arc++) {
 		for (int i = 0; i < 24; i++) {
 			if (*loop[arc][i]) {
-				checkStart[arc] = i;//sssssss
+				loopStart[arc] = i;//sssssss
 				break;
 			}
 		}
@@ -283,9 +305,9 @@ int ChessBoard::analysis() {
 
 	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
 	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
-		if (checkStart[arc] != -1) { //判断当前弧上有点
+		if (loopStart[arc] != -1) { //判断当前弧上有点
 			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
-				s = checkStart[arc];
+				s = loopStart[arc];
 				e = (s + dir) % 24;
 
 				colorS = *loop[arc][s];//保留起点颜色，起点置空，和旧函数思路一样

@@ -10,6 +10,7 @@
 #endif // _MSC_VER > 1000
 
 #include "SearchEngine.h"
+#include "ChessBoard.h"
 //#define ABDebug
 class CNegaScout : 
 	public CSearchEngine 
@@ -22,6 +23,7 @@ protected:
 	int NegaScout_TT_HH(int depth,int num,int m_Type);
 	int NegaScout_ABTree(int depth, int m_Type, int alpha = 0, int beta = 0);
     CHESSMOVE m_bsetMove[2];
+	ChessBoard chessBoard;
 //	int top;
 	int flag1;
 	int flag2;
