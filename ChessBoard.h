@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "Define.h"
+#include "Eveluation.h"
 #include <stack>
 
 #define X 0
@@ -10,51 +11,65 @@
 #define INNER 0
 #define OUTER 1
 
+#define MAX_INT 0x7fffffff
+#define MIN_INT 0x80000000
+
 using namespace std;
 
 class ChessBoard {
 private:
 	BYTE position[6][6];
 	BYTE* loop[2][24];
-	int checkStart[2];
+	int loopStart[2];
+	bool isBlackTurn;
 
+	int moveCount;
+	CHESSMOVE** moveList;
 	stack<CHESSMOVE> moves;
 
-	static const int arcLoop[2][24][2];//64-75的定义添加到cpp文件里
+	static const int posScore[3][6][6];
+	static const BYTE defaultStartBoard[6][6];
 
-	int m_nMoveCount;
-	CHESSMOVE m_nMoveList[8][100];
-
-	int AddMove(int nFromX, int nToX, int nFromY, int nToY, int nPly);
+	int addMove(int nFromX, int nToX, int nFromY, int nToY);
 
 	int bValue ,rValue ;//总的评估值
 	int bPValue , rPValue ;
 	int bAValue , rAValue ;
 	int bMValue , rMValue ;//用来表示可移动分值
-	int bPosValue , RPosValue ;
+	int bPosValue , rPosValue ;
 	int bNum , rNum ;//红方，黑方棋子数量
 	int bArcValue , rArcValue;//占弧值
 public:
-	ChessBoard();
-	ChessBoard(BYTE position[6][6]);
+	ChessBoard(bool isBlackFirst = true);
+	ChessBoard(BYTE position[6][6], bool isBlackFirst = true);
+	bool setChessPosition(const BYTE position[6][6]);
+	bool setChessTurn(bool isBlackTurn);
 
-	BOOL IsValidMove(int nFromX, int nFromY, int nToX, int nToY);
+	bool isValidMove(int nFromX, int nFromY, int nToX, int nToY);
 	//产生给定棋盘上的所有合法的走法
-	int createPossibleMove(int nPly, int nSide);
-	int analysis(int &bNum, int &bAttack, int &bProtect, int &bMove, int &rNum, int &rAttack, int &rProtect, int &rMove);
+	int createPossibleMove(CHESSMOVE* moveList, int nSide);
+	int analysis();
 	int value();
+	void boardIteration(
+		void(*pointProc)(int,int),
+		void(*arcPointProc)(bool,int), 
+		void(*stepProc)(int,int,int,int), 
+		void(*eatProc)(bool,int,int)
+	);
 
 	void move(int fX, int fY, int tX, int tY);
+	void move(CHESSMOVE move);
 	void unMove();
-	int isGameOver();
+	int finishedMoves();
+	int isGameOver();//在搜索中用到，表示某一方的搜索树的终局
 
-	int value(bool isBlack);
-	int pValue(bool isBlack);
-	int aValue(bool isBlack);
-	int mValue(bool isBlack);
-	int posValue(bool isBlack);
-	int nums(bool isBlack);
-	int arcValue(bool isBlack);
+	int getPValue(bool isBlack);
+	int getAValue(bool isBlack);
+	int getMValue(bool isBlack);
+	int getPosValue(bool isBlack);
+	int getNums(bool isBlack);
+	int getArcValue(bool isBlack);
 
 	BYTE* operator[](int x);
+	BYTE& operator[](CHESSNAMPOS pos);
 };

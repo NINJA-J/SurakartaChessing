@@ -325,10 +325,19 @@ int CMoveGenerator::CreatePossibleMove(BYTE position[6][6],int nPly,int nSide) {
 	return m_nMoveCount;
 }
 
-int CMoveGenerator::AnalysisAttackInfo(BYTE position[6][6],int &bNum, int & bAttack, int & bProtect, int & bMove, int &rNum, int & rAttack, int & rProtect, int & rMove)
+int CMoveGenerator::AnalysisAttackInfo(BYTE position[6][6],int &bNum,int &bPos, int & bAttack, int & bProtect, int & bMove, int &rNum,int &rPos, int & rAttack, int & rProtect, int & rMove)
 {
 	memcpy(this->position, position, sizeof(BYTE[6][6]));
 	bAttack = bProtect = rAttack = rProtect = bMove = rMove = 0;
+	bNum = rNum = bPos = rPos = 0;
+	static const int posScore[6][6] = {
+		{ 5,20,20,20,20,5 },
+		{ 20,30,50,50,30,20 },
+		{ 20,50,40,40,50,50 },
+		{ 20,50,40,40,50,20 },
+		{ 20,30,50,50,30,20 },
+		{ 5,20,20,20,20,5 }
+	};
 	for (int arc = INNER; arc <= OUTER; arc++) {
 		for (int i = 0; i < 24; i++) {
 			if (*loop[arc][i]) {
@@ -371,7 +380,7 @@ int CMoveGenerator::AnalysisAttackInfo(BYTE position[6][6],int &bNum, int & bAtt
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
 			if (position[i][j] ) {
-				position[i][j] == BLACK ? bNum++ : rNum++;
+				position[i][j] == BLACK ? bNum++,bPos+=posScore[i][j] : rNum++,rPos+=posScore[i][j];
 				for (int x = -1; x <= 1; x++) {
 					for (int y = -1; y <= 1; y++) {
 						if (0 <= x + i && x + i < 6 &&

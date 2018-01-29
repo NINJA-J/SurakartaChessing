@@ -19,7 +19,7 @@ public:
 	static BOOL IsValidMove(BYTE position[6][6],int nFromX,int nFromY,int nToX,int nToY);
 	//产生给定棋盘上的所有合法的走法
 	int CreatePossibleMove(BYTE position[6][6], int nPly, int nSide);
-	int AnalysisAttackInfo(BYTE position[6][6],int &bNum, int &bAttack, int &bProtect, int &bMove,int &rNum, int &rAttack, int &rProtect, int &rMove);
+	int AnalysisAttackInfo(BYTE position[6][6],int &bNum,int &bPos, int &bAttack, int &bProtect, int &bMove,int &rNum,int &rPos, int &rAttack, int &rProtect, int &rMove);
     
 	//存放走法队列
 	CHESSMOVE m_nMoveList[8][100];
