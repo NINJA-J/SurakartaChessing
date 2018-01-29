@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "Define.h"
+#include "Eveluation.h"
 #include <stack>
 
 #define X 0
@@ -26,7 +27,6 @@ private:
 	CHESSMOVE** moveList;
 	stack<CHESSMOVE> moves;
 
-	static const int arcLoop[2][24][2];//64-75的定义添加到cpp文件里 tt
 	static const int posScore[3][6][6];
 	static const BYTE defaultStartBoard[6][6];
 
@@ -50,13 +50,19 @@ public:
 	int createPossibleMove(CHESSMOVE* moveList, int nSide);
 	int analysis();
 	int value();
+	void boardIteration(
+		void(*pointProc)(int,int),
+		void(*arcPointProc)(bool,int), 
+		void(*stepProc)(int,int,int,int), 
+		void(*eatProc)(bool,int,int)
+	);
 
 	void move(int fX, int fY, int tX, int tY);
 	void move(CHESSMOVE move);
 	void unMove();
-	int isGameOver(bool isBlackPlaying);//在搜索中用到，表示某一方的搜索树的终局
+	int finishedMoves();
+	int isGameOver();//在搜索中用到，表示某一方的搜索树的终局
 
-	int getValue(bool isBlack);
 	int getPValue(bool isBlack);
 	int getAValue(bool isBlack);
 	int getMValue(bool isBlack);
@@ -65,4 +71,5 @@ public:
 	int getArcValue(bool isBlack);
 
 	BYTE* operator[](int x);
+	BYTE& operator[](CHESSNAMPOS pos);
 };

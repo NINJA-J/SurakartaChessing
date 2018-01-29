@@ -1,19 +1,5 @@
 #include "ChessBoard.h"
 
-const int ChessBoard::arcLoop[2][24][2] = {
-	{   //内弧
-		{ 1,0 },{ 1,1 },{ 1,2 },{ 1,3 },{ 1,4 },{ 1,5 },
-		{ 0,4 },{ 1,4 },{ 2,4 },{ 3,4 },{ 4,4 },{ 5,4 },
-		{ 4,5 },{ 4,4 },{ 4,3 },{ 4,2 },{ 4,1 },{ 4,0 },
-		{ 5,1 },{ 4,1 },{ 3,1 },{ 2,1 },{ 1,1 },{ 0,1 }
-	},{ //外弧
-		{ 2,0 },{ 2,1 },{ 2,2 },{ 2,3 },{ 2,4 },{ 2,5 },
-		{ 0,3 },{ 1,3 },{ 2,3 },{ 3,3 },{ 4,3 },{ 5,3 },
-		{ 3,5 },{ 3,4 },{ 3,3 },{ 3,2 },{ 3,1 },{ 3,0 },
-		{ 5,2 },{ 4,2 },{ 3,2 },{ 2,2 },{ 1,2 },{ 0,2 }
-	} 
-};
-
 const int ChessBoard::posScore[3][6][6] = {
 	{
 		{5,20,20,20,20,5},
@@ -363,6 +349,55 @@ int ChessBoard::value() {
 	return isBlackTurn ? bValue - rValue : rValue - bValue;
 }
 
+void ChessBoard::boardIteration(void(*pointProc)(int, int), void(*arcPointProc)(bool,int), void(*stepProc)(int, int, int, int), void(*arcStepProc)(bool,int, int)) {
+	for (int arc = INNER; arc <= OUTER; arc++) {
+		for (int i = 0; i < 24; i++) {
+			arcPointProc(arc == OUTER, i);
+			if (*loop[arc][i] && loopStart[arc] == -1) {
+				loopStart[arc] = i;
+			}
+		}
+	}
+
+	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
+	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
+		if (loopStart[arc] != -1) { //判断当前弧上有点
+			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
+				s = loopStart[arc];
+				e = (s + dir) % 24;
+				colorS = *loop[arc][s];//保留起点颜色，起点置空，和旧函数思路一样
+				*loop[arc][s] = 0;
+				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
+					colorE = *loop[arc][e];
+					if (*loop[arc][e]) {
+						arcStepProc(arc == OUTER, s, e); //
+					}
+				}
+				if (!*loop[arc][s]) *loop[arc][s] = colorS;
+			}
+		}
+	}
+
+	//生成走子着法
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 6; j++) {
+			pointProc(i, j);
+			if (position[i][j]) {
+				for (int x = -1; x <= 1; x++) {
+					for (int y = -1; y <= 1; y++) {
+						if (0 <= x + i && x + i < 6 &&
+							0 <= y + j && y + j < 6 &&
+							position[x + i][y + j] == 0) {
+							stepProc(i, j, x + i, y + j);
+
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 void ChessBoard::move(int fX, int fY, int tX, int tY) {
 	moves.push(CHESSMOVE(
 		fX, fY, tX, tY, 
@@ -389,16 +424,14 @@ void ChessBoard::unMove() {
 	}
 }
 
-int ChessBoard::isGameOver(bool isBlackPlaying) {
-	if (bNum&&rNum) return false;
-
-	int value = MAX_INT - 1000 + moves.size();
-	//如果黑棋有子，则
-	return isBlackPlaying^bNum ? value : -value;
+int ChessBoard::finishedMoves() {
+	return moves.size();
 }
 
-int ChessBoard::getValue(bool isBlack) {
-	return isBlack ? bValue : rValue;
+int ChessBoard::isGameOver() {
+	if (bNum&&rNum) 
+		return false;
+	return bNum ? BLACK : RED;
 }
 
 int ChessBoard::getPValue(bool isBlack) {
@@ -470,4 +503,9 @@ int ChessBoard::getArcValue(bool isBlack)
 
 BYTE * ChessBoard::operator[](int x) {
 	return position[x];
+}
+
+BYTE & ChessBoard::operator[](CHESSNAMPOS pos)
+{
+	return position[pos.x][pos.y];
 }

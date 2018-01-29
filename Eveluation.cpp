@@ -25,7 +25,7 @@ CEveluation::~CEveluation()
 {
 
 }
-int CEveluation::Eveluate(BYTE position[6][6], BOOL IsBlackturn)
+int CEveluation::evaluate(BYTE position[6][6], BOOL IsBlackturn)
 {
 
 	//你需要在这个函数里添加有如下功能的代码：
@@ -33,6 +33,8 @@ int CEveluation::Eveluate(BYTE position[6][6], BOOL IsBlackturn)
 	//2.可以得到双方所占位置的分值，每个位置对应的分值可参考相关论文
 	//3.可以得到我方棋子可移动分值
 	//4.尽量加一些其他估值方法
+
+	bValue = ValueVector()
 
 	 BlackValue=0,RedValue=0;//红黑方总的评估值
 	 BProtectValue=0,RProtectValue=0; 
@@ -167,6 +169,14 @@ int CEveluation::GetArcValue(BYTE position[6][6], BOOL IsBlackturn)
 	else {
 		return RArcNum * 5 + NoArcNum * 5;
 	}
+}
+
+void CEveluation::pointProc(int x, int y)
+{
+}
+
+void CEveluation::arcPointProc(bool isOuter, int index)
+{
 }
 
 
