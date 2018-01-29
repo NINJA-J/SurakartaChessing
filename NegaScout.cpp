@@ -1,11 +1,15 @@
 ﻿// NegaScout.cpp: implementation of the CNegaScout class zsj.
 //
 //////////////////////////////////////////////////////////////////////
-
+#include <unordered_map>
 #include "stdafx.h"
 #include "Surakarta.h"
 #include "NegaScout.h"
-
+#include <cstdlib>
+#include <cmath>
+#include <string>
+#include <iostream>
+using namespace std;
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[]=__FILE__;
@@ -20,6 +24,17 @@ CNegaScout::CNegaScout()
 //	top=-1;
 	flag1=0;
 	flag2=0;
+	//srand((unsigned)time(NULL));
+	//for (int i = 0; i < 6; i++)
+	//{
+	//	for (int j = 0; j < 6; j++)
+	//	{
+	//		for (int k = 0; k < 3; k++)
+	//		{
+	//			ChessValue[i][j][k] = (rand() << 16) | (rand());
+	//		}
+	//	}
+	//}
 }
 int x;
 CNegaScout::~CNegaScout()
@@ -33,7 +48,7 @@ CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6],int m_isPlayerBlack)
 	//NegaScout_TT_HH(m_nMaxDepth,0,m_isPlayerBlack);
 	NegaScout_ABTree(m_nMaxDepth, m_isPlayerBlack);
 	MakeMove(&m_cmBestMove);
-	int score = m_pEval->Eveluate(CurPosition,m_isPlayerBlack);
+	int score = GetValueByKey(CurPosition,m_isPlayerBlack);
 	memcpy(position, CurPosition, 36);
 	//CString temp;
 	//temp.Format("走法：%d%d%d%d",m_cmBestMove.From.x,m_cmBestMove.From.y,  m_cmBestMove.To.x, m_cmBestMove.To.y);
@@ -156,7 +171,7 @@ int CNegaScout::NegaScout_ABTree(int depth, int m_Type, int alpha, int beta) {
 		//temp.Format("x:%d", x);
 		//AfxMessageBox(temp);
 		
-		return m_pEval->Eveluate(CurPosition, m_Type);//叶结点
+		return GetValueByKey(CurPosition, m_Type);//叶结点
 	}
 
 	int count = m_pMG->CreatePossibleMove(CurPosition, depth, side);
@@ -204,4 +219,29 @@ int CNegaScout::NegaScout_ABTree(int depth, int m_Type, int alpha, int beta) {
 	}
 	return best;//返回最值
 #endif
+}
+
+int CNegaScout::GetValueByKey(BYTE position[6][6], int m_isPlayerBlack)
+{
+	long long Key=0;
+	int Power = 0;
+	int Value;
+	for (int i = 0; i < 6; i++)
+	{
+		for (int j = 0; j < 6; j++)
+		{
+			Key = Key + position[i][j] * PowerNum[Power++];
+		}
+	}
+	unordered_map<long long, int>::const_iterator got = unorderedMap.find(Key);
+	if (got == unorderedMap.end())
+	{
+		Value = m_pEval->Eveluate(position, m_isPlayerBlack);
+		unorderedMap.insert({ {Key,Value} });
+		return Value;
+	}
+	else {
+		return got->second;
+	}
+	return 0;
 }
