@@ -40,6 +40,8 @@ private:
 	int checkStart[2];
 	//记录m_nMoveList中走法的数量
 	int m_nMoveCount;
+
+	ChessBoard* board;
 };
 
 #endif // !defined(AFX_MOVEGENERATOR_H__70DFE443_B8BC_48BB_871B_68E756817EAE__INCLUDED_)

@@ -46,6 +46,20 @@ int ChessBoard::addMove(int nFromX, int nToX, int nFromY, int nToY) {
 	return moveCount;
 }
 
+void ChessBoard::inidIdList() {
+	long long temp = 1;
+	rawId = 0;
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 6; j++) {
+			idList[i][j][NOCHESS] = 0;
+			idList[i][j][BLACK] = temp;
+			idList[i][j][RED] = -temp;
+			rawId += temp + idList[i][j][position[i][j]];
+			temp *= 3;
+		}
+	}
+}
+
 ChessBoard::ChessBoard(bool isBlackFirst) {
 	setChessPosition(defaultStartBoard);
 	setChessTurn(isBlackFirst);
@@ -399,29 +413,56 @@ void ChessBoard::boardIteration(void(*pointProc)(int, int), void(*arcPointProc)(
 }
 
 void ChessBoard::move(int fX, int fY, int tX, int tY) {
-	moves.push(CHESSMOVE(
-		fX, fY, tX, tY, 
-		isBlackTurn ? BLACK : RED, 
-		!position[tX][tY])
-	);
-	if (position[tX][tY]) position[tX][tY] == BLACK ? bNum-- : rNum--;
-	position[tX][tY] = position[fX][fY];
-	position[fX][fY] = NOCHESS;
-	isBlackTurn = !isBlackTurn;
+	CHESSMOVE move(
+		fX, fY, tX, tY,
+		isBlackTurn ? BLACK : RED,
+		!position[tX][tY]);
+	this->move(move);
+	isBlackTurn = !isBlackTurn; 
 }
 
 void ChessBoard::move(CHESSMOVE move) {
-	this->move(move.From.x, move.From.y, move.To.x, move.To.y);
+	BYTE sColor = position[move.From.x][move.From.y];
+	BYTE eColor = position[move.To.x][move.To.y];
+	if (eColor)
+		eColor == BLACK ? bNum-- : rNum--;
+
+	rawId -= idList[move.From.x][move.From.y][sColor];
+	rawId -= idList[move.To.x][move.To.y][eColor];
+	rawId += idList[move.To.x][move.To.y][sColor];
+
+	position[move.To.x][move.To.y] = position[move.From.x][move.From.y];
+	position[move.From.x][move.From.y] = NOCHESS;
+
+	isBlackTurn = !isBlackTurn;
 }
 
 void ChessBoard::unMove() {
-	CHESSMOVE lastMove = moves.top();
+	CHESSMOVE move = moves.top();
 	moves.pop();
-	position[lastMove.From.x][lastMove.From.y] = position[lastMove.To.x][lastMove.To.y];
-	if (!lastMove.isMove) {
-		position[lastMove.To.x][lastMove.To.y] = 3 - position[lastMove.To.x][lastMove.To.y];
-		position[lastMove.To.x][lastMove.To.y] == BLACK ? bNum++ : rNum++;
+
+	BYTE sColor = move.Side ? BLACK : RED;
+	BYTE eColor = move.isMove ? 0 : 3-sColor;
+
+	rawId -= idList[move.To.x][move.To.y][sColor];
+	rawId += idList[move.From.x][move.From.y][sColor];
+	if (eColor) {
+		eColor == BLACK ? bNum++ : rNum++;
+		rawId += idList[move.To.x][move.To.y][eColor];
 	}
+
+	position[move.To.x][move.To.y] = eColor;
+	position[move.From.x][move.From.y] = sColor;
+
+	isBlackTurn = !isBlackTurn;
+}
+
+ID_TYPE ChessBoard::getId() {
+	return isBlackTurn ? getIdRaw()|SIG_BLACK : getIdRaw();
+}
+
+ID_TYPE ChessBoard::getIdRaw() {
+	return rawId;
 }
 
 int ChessBoard::finishedMoves() {
