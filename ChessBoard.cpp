@@ -104,6 +104,10 @@ bool ChessBoard::setChessTurn(bool isBlackTurn) {
 	return true;
 }
 
+int ChessBoard::getChessTurn() {
+	return isBlackTurn;
+}
+
 bool ChessBoard::isValidMove(int nFromX, int nFromY, int nToX, int nToY)
 {
 	static const int COLOR = 0;//循环链表末3项对应的含义（主要增加可读性）
@@ -549,4 +553,17 @@ BYTE * ChessBoard::operator[](int x) {
 BYTE & ChessBoard::operator[](CHESSNAMPOS pos)
 {
 	return position[pos.x][pos.y];
+}
+
+inline BYTE& ChessBoard::pInner(int index){
+	return *loop[INNER][index];
+}
+
+inline BYTE& ChessBoard::pOuter(int index)
+{
+	return *loop[OUTER][index];
+}
+
+inline BYTE& ChessBoard::pArc(int arc, int index) {
+	return *loop[arc][index];
 }

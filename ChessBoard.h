@@ -52,7 +52,9 @@ public:
 	ChessBoard(bool isBlackFirst = true);
 	ChessBoard(BYTE position[6][6], bool isBlackFirst = true);
 	bool setChessPosition(const BYTE position[6][6]);
+
 	bool setChessTurn(bool isBlackTurn);
+	int getChessTurn();
 
 	bool isValidMove(int nFromX, int nFromY, int nToX, int nToY);
 	//产生给定棋盘上的所有合法的走法
@@ -83,4 +85,7 @@ public:
 
 	BYTE* operator[](int x);
 	BYTE& operator[](CHESSNAMPOS pos);
+	inline BYTE& pInner(int index);
+	inline BYTE& pOuter(int index);
+	inline BYTE& pArc(int arc, int index);
 };

@@ -30,20 +30,14 @@ const int CMoveGenerator::arcLoop[2][24][2] = {
 		{ 3,5 },{ 3,4 },{ 3,3 },{ 3,2 },{ 3,1 },{ 3,0 },
 		{ 5,2 },{ 4,2 },{ 3,2 },{ 2,2 },{ 1,2 },{ 0,2 }
 	} };
+
 CMoveGenerator::CMoveGenerator() {
-	memset(position, 0, sizeof(BYTE[6][6]));
-	for (int i = 0; i < 24; i++) {
-		for (int arc = INNER; arc <= OUTER; arc++) {
-			loop[arc][i] = &(this->position[arcLoop[arc][i][X]][arcLoop[arc][i][Y]]);
-		}
-	}
-	checkStart[INNER] = checkStart[OUTER] = -1;
+	listOutput = NULL;
+	listMaxSpace = 0;
 }
 
-CMoveGenerator::~CMoveGenerator()
-{
+CMoveGenerator::~CMoveGenerator() { }
 
-}
 BOOL CMoveGenerator::IsValidMove(BYTE position[6][6], int nFromX, int nFromY, int nToX, int nToY) {
 	/* 一些改进
 	本函数在理解原函数的基础上进行了改进，对判断流程进行了简化并尝试提高效率
@@ -53,12 +47,6 @@ BOOL CMoveGenerator::IsValidMove(BYTE position[6][6], int nFromX, int nFromY, in
 	static const类型主要以空间换时间减少生成次数
 	后文大量的for循环主要为减少代码量，展开形式见注释
 	*/
-	static const int X = 0;
-	static const int Y = 1;
-
-	static const int INNER = 0;//所有内环相关数组下标均为0
-	static const int OUTER = 1;//所有外环相关数组下标均为1
-
 	static const int COLOR = 0;//循环链表末3项对应的含义（主要增加可读性）
 	static const int LAST = 1;
 	static const int NEXT = 2;
@@ -158,19 +146,6 @@ BOOL CMoveGenerator::IsValidMove(BYTE position[6][6], int nFromX, int nFromY, in
 					}
 				}
 			}
-			/* 内弧链表单独构建代码
-			colorLoop[i][OUTER][COLOR] =
-			//                position[ arcLoop[OUTER][i][X] ][ arcLoop[OUTER][i][Y] ];
-			//            if( colorLoop[i][OUTER][COLOR] ){
-			//                if( OUTER_HEAD == -1 ){
-			//                    OUTER_HEAD = colorLoop[i][OUTER][LAST] = colorLoop[i][OUTER][NEXT] = i;
-			//                } else {
-			//                    colorLoop[ i ][OUTER][LAST] = colorLoop[OUTER_HEAD][OUTER][LAST];
-			//                    colorLoop[ i ][OUTER][NEXT] = OUTER_HEAD;
-			//                    colorLoop[ colorLoop[OUTER_HEAD][OUTER][LAST] ][OUTER][NEXT] = i;
-			//                    colorLoop[ OUTER_HEAD ][OUTER][LAST] = i;
-			//                }
-			//            }*/
 		}
 
 		int stIndex;//起始节点在弧中的下标
@@ -203,67 +178,11 @@ BOOL CMoveGenerator::IsValidMove(BYTE position[6][6], int nFromX, int nFromY, in
 				}
 			}
 		}
-		/* 8种过弧检测分立写法
-		if( arcIndex[INNER][nFromX][nFromY] != -1 &&
-		//            arcIndex[INNER][nToX  ][nToY  ] != -1 ){
-		//            stIndex = arcIndex[INNER][nFromX][nFromY];
-		//            edIndex = colorLoop[stIndex][INNER][LAST];
-		//            if( arcLoop[INNER][edIndex][X] == nToX &&
-		//                arcLoop[INNER][edIndex][Y] == nToY &&
-		//                ( stIndex/6 != edIndex/6 || stIndex < edIndex ) ) return true;
-		//            edIndex = colorLoop[stIndex][INNER][NEXT];
-		//            if( arcLoop[INNER][edIndex][X] == nToX &&
-		//                arcLoop[INNER][edIndex][Y] == nToY &&
-		//                ( stIndex/6 != edIndex/6 || stIndex > edIndex ) ) return true;
-		//
-		//            stIndex = 23 - arcIndex[INNER][nFromY][nFromX];
-		//            edIndex = colorLoop[stIndex][INNER][LAST];
-		//            if( arcLoop[INNER][edIndex][X] == nToX &&
-		//                arcLoop[INNER][edIndex][Y] == nToY &&
-		//                ( stIndex/6 != edIndex/6 || stIndex < edIndex ) ) return true;
-		//            edIndex = colorLoop[stIndex][INNER][NEXT];
-		//            if( arcLoop[INNER][edIndex][X] == nToX &&
-		//                arcLoop[INNER][edIndex][Y] == nToY &&
-		//                ( stIndex/6 != edIndex/6 || stIndex > edIndex ) ) return true;
-		//        }
-		//        if( arcIndex[OUTER][nFromX][nFromY] != -1 &&
-		//            arcIndex[OUTER][nToX  ][nToY  ] != -1 ){
-		//            stIndex = arcIndex[OUTER][nFromX][nFromY];
-		//            edIndex = colorLoop[stIndex][OUTER][LAST];
-		//            if( arcLoop[OUTER][edIndex][X] == nToX &&
-		//                arcLoop[OUTER][edIndex][Y] == nToY &&
-		//                ( stIndex/6 != edIndex/6 || stIndex < edIndex ) ) return true;
-		//            edIndex = colorLoop[stIndex][OUTER][NEXT];
-		//            if( arcLoop[OUTER][edIndex][X] == nToX &&
-		//                arcLoop[OUTER][edIndex][Y] == nToY &&
-		//                ( stIndex/6 != edIndex/6 || stIndex > edIndex ) ) return true;
-		//
-		//            stIndex = 23 - arcIndex[OUTER][nFromY][nFromX];
-		//            edIndex = colorLoop[stIndex][OUTER][LAST];
-		//            if( arcLoop[OUTER][edIndex][X] == nToX &&
-		//                arcLoop[OUTER][edIndex][Y] == nToY &&
-		//                ( stIndex/6 != edIndex/6 || stIndex < edIndex ) ) return true;
-		//            edIndex = colorLoop[stIndex][OUTER][NEXT];
-		//            if( arcLoop[OUTER][edIndex][X] == nToX &&
-		//                arcLoop[OUTER][edIndex][Y] == nToY &&
-		//                ( stIndex/6 != edIndex/6 || stIndex > edIndex ) ) return true;
-		//        }*/
 		return false;
 	}
 }
 
-
-int CMoveGenerator::AddMove(int nFromX,int nFromY,int nToX,int nToY,int nPly) {
- 	m_nMoveList[nPly][m_nMoveCount].From.x=nFromX;
-	m_nMoveList[nPly][m_nMoveCount].From.y=nFromY;
-	m_nMoveList[nPly][m_nMoveCount].To.x=nToX;
-	m_nMoveList[nPly][m_nMoveCount].To.y=nToY;
-
-	m_nMoveCount++;
-	return m_nMoveCount;
-}
-
-
+/*
 int CMoveGenerator::CreatePossibleMove(BYTE position[6][6],int nPly,int nSide) {//nside代表产生哪一方的走法	    
 	m_nMoveCount = 0;
 	memcpy(this->position, position, sizeof(BYTE[6][6]));
@@ -324,7 +243,89 @@ int CMoveGenerator::CreatePossibleMove(BYTE position[6][6],int nPly,int nSide) {
 	}
 	return m_nMoveCount;
 }
+*/
 
+int CMoveGenerator::createPossibleMoves(CHESSMOVE * list, int maxSize) {
+	if (list == NULL || maxSize == 0) return 0;
+	listOutput = list;
+	listMaxSpace = maxSize;
+	moveCount = 0;
+	int checkStart[2] = { -1,-1 };
+	int nSide = board->getChessTurn();
+
+	for (int arc = INNER; arc <= OUTER; arc++) {
+		for (int i = 0; i < 24; i++) {
+			if (board->pArc(arc, i)) {
+				checkStart[arc] = i;//sssssss
+				break;
+			}
+		}
+	}
+
+	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
+	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
+		if (checkStart[arc] != -1) { //判断当前弧上有点
+			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
+				s = checkStart[arc];
+				e = (s + dir) % 24;
+				colorS = board->pArc(arc,s);//保留起点颜色，起点置空，和旧函数思路一样
+				board->pArc(arc, s) = 0;
+				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
+					colorE = board->pArc(arc, e);// *loop[arc][e];
+					if (colorE) {
+						if (colorS + nSide == 2 && colorE - nSide == 1 && s / 6 != e / 6) {
+							addMove(CHESSMOVE(
+								arcLoop[arc][s][X], arcLoop[arc][s][Y],
+								arcLoop[arc][e][X], arcLoop[arc][e][Y],
+								nSide, false));
+						}
+						board->pArc(arc, s) = colorS;//恢复起点颜色，继续搜索
+						s = e; //终点置为新起点
+						colorS = board->pArc(arc, s);//保留起点颜色，起点置空，和旧函数思路一样
+						board->pArc(arc, s) = 0;
+					}
+				}
+				if (!board->pArc(arc, s)) board->pArc(arc, s) = colorS;
+			}
+		}
+	}
+
+	//生成走子着法
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 6; j++) {
+			if ((*board)[i][j] == 2 - nSide) {
+				for (int x = -1; x <= 1; x++) {
+					for (int y = -1; y <= 1; y++) {
+						if (0 <= x + i && x + i < 6 &&
+							0 <= y + j && y + j < 6 &&
+							(*board)[x + i][y + j] == 0) {
+							addMove(CHESSMOVE(i, j, x + i, y + j, nSide, true));
+
+						}
+					}
+				}
+			}
+		}
+	}
+	return moveCount;
+}
+
+inline void CMoveGenerator::addMove(CHESSMOVE move) {
+	if (listOutput&&moveCount < listMaxSpace) {
+		listOutput[moveCount++] = move;
+	}
+}
+
+inline void CMoveGenerator::move(CHESSMOVE move) {
+	board->move(move);
+	listOutput = NULL;
+}
+
+inline void CMoveGenerator::unMove() {
+	board->unMove();
+}
+
+/*
 int CMoveGenerator::AnalysisAttackInfo(BYTE position[6][6],int &bNum,int &bPos, int & bAttack, int & bProtect, int & bMove, int &rNum,int &rPos, int & rAttack, int & rProtect, int & rMove)
 {
 	memcpy(this->position, position, sizeof(BYTE[6][6]));
@@ -394,4 +395,4 @@ int CMoveGenerator::AnalysisAttackInfo(BYTE position[6][6],int &bNum,int &bPos, 
 		}
 	}
 	return 0;
-}
+}*/
