@@ -89,6 +89,15 @@ ipch/
 *.vspx
 *.sap
 
+# My Visual Studio Ignores
+*.clw
+*.dsp
+*.dsw
+*.rc
+*.sln
+*.vcxproj
+*.vcxproj.filters
+
 # TFS 2012 Local Workspace
 $tf/
 
