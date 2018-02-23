@@ -21,9 +21,18 @@ CEveluation::CEveluation()
 
 }
 
+CEveluation::CEveluation(ChessBoard & board)
+{
+	chessBoard = &board;
+}
+
 CEveluation::~CEveluation()
 {
 
+}
+void CEveluation::setChessBoard(ChessBoard & board)
+{
+	chessBoard = &board;
 }
 int CEveluation::evaluate(BYTE position[6][6], BOOL IsBlackturn)
 {
@@ -65,6 +74,13 @@ int CEveluation::evaluate(BYTE position[6][6], BOOL IsBlackturn)
 		return BlackValue-RedValue;//返回的是一个随机数，只是为了让程序能运行
 	else
 		return RedValue-BlackValue;
+}
+
+int CEveluation::evaluate()
+{
+	BYTE pos[6][6];
+	chessBoard->getPosition(pos);
+	return evaluate(pos,chessBoard->getTurn());
 }
 
 
@@ -169,6 +185,25 @@ int CEveluation::GetArcValue(BYTE position[6][6], BOOL IsBlackturn)
 	else {
 		return RArcNum * 5 + NoArcNum * 5;
 	}
+}
+
+inline bool CEveluation::getBoardValue(ID_TYPE id, int depth, int & value) {
+	unordered_map<ID_TYPE, valUnion>::const_iterator iter = boardValue.find(id);
+	if (iter == boardValue.end()) return false;
+	if (iter->second.depth < depth)return false;
+	value = iter->second.value;
+	return true;
+}
+
+inline bool CEveluation::addBoardValue(ID_TYPE id, int depth, int value) {
+	unordered_map<ID_TYPE, valUnion>::iterator iter = boardValue.find(id);
+	if (iter == boardValue.end())
+		boardValue.insert({ id,valUnion(depth,value) });
+	else {
+		iter->second.depth = depth;
+		iter->second.value = value;
+	}
+	return true;
 }
 
 void CEveluation::pointProc(int x, int y)

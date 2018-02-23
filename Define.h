@@ -11,9 +11,15 @@
 #define NOCHESS 0
 #define BLACK   1
 #define RED     2
+
+#define B_WIN 1
+#define R_WIN 2
 #define IsBlack(x) (x==1)
 #define IsRed(x) (x==2)
 #define IsSameSide(x,y) ((IsBlack(x)&&IsBlack(y))||(IsRed(x)&&IsRed(y)))
+
+#define max(x,y) (((x)>(y))?(x):(y))
+#define min(x,y) (((x)<(y))?(x):(y))
 
 const int arcLoop[2][24][2] = {
 	{   //ÄÚ»¡

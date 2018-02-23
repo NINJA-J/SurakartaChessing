@@ -86,7 +86,7 @@ ChessBoard::ChessBoard(BYTE position[6][6], bool isBlackFirst) {
 	moveList = NULL;
 }
 
-bool ChessBoard::setChessPosition(const BYTE position[6][6]) {
+bool ChessBoard::setChessPosition(const BYTE position[6][6], bool isBlackFirst) {
 	bNum = rNum = 0;
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
@@ -95,6 +95,8 @@ bool ChessBoard::setChessPosition(const BYTE position[6][6]) {
 			if (position[i][j] == RED) rNum++;
 		}
 	}
+	isBlackTurn = isBlackFirst;
+	while (moves.size()) moves.pop();
 	return true;
 }
 
@@ -439,6 +441,26 @@ void ChessBoard::move(CHESSMOVE move) {
 	position[move.From.x][move.From.y] = NOCHESS;
 
 	isBlackTurn = !isBlackTurn;
+	moves.push(move);
+}
+
+void ChessBoard::cMove(CHESSMOVE move)
+{
+	BYTE sColor = position[move.From.x][move.From.y];
+	BYTE eColor = position[move.To.x][move.To.y];
+	if (eColor)
+		eColor == BLACK ? bNum-- : rNum--;
+
+	rawId -= idList[move.From.x][move.From.y][sColor];
+	rawId -= idList[move.To.x][move.To.y][eColor];
+	rawId += idList[move.To.x][move.To.y][sColor];
+
+	position[move.To.x][move.To.y] = position[move.From.x][move.From.y];
+	position[move.From.x][move.From.y] = NOCHESS;
+
+	isBlackTurn = !isBlackTurn;
+	cMoves.push(move);
+	while (moves.size())moves.pop();
 }
 
 void ChessBoard::unMove() {
@@ -473,33 +495,33 @@ int ChessBoard::finishedMoves() {
 	return moves.size();
 }
 
-int ChessBoard::isGameOver() {
+inline int ChessBoard::isGameOver() {
 	if (bNum&&rNum) 
-		return false;
-	return bNum ? BLACK : RED;
+		return 0;
+	return bNum ? B_WIN : R_WIN;
 }
 
-int ChessBoard::getPValue(bool isBlack) {
+inline int ChessBoard::getPValue(bool isBlack) {
 	return isBlack ? bPValue : rPValue;
 }
 
-int ChessBoard::getAValue(bool isBlack) {
+inline int ChessBoard::getAValue(bool isBlack) {
 	return isBlack ? bAValue : rAValue;
 }
 
-int ChessBoard::getMValue(bool isBlack) {
+inline int ChessBoard::getMValue(bool isBlack) {
 	return isBlack ? bMValue : rMValue;
 }
 
-int ChessBoard::getPosValue(bool isBlack) {
+inline int ChessBoard::getPosValue(bool isBlack) {
 	return isBlack ? bPosValue : rPosValue;
 }
 
-int ChessBoard::getNums(bool isBlack) {
+inline int ChessBoard::getNums(bool isBlack) {
 	return isBlack ? bNum : rNum;
 }
 
-int ChessBoard::getArcValue(bool isBlack)
+inline int ChessBoard::getArcValue(bool isBlack)
 {
 	int BArcNum = 0, RArcNum = 0, NoArcNum = 0;
 	int i;
@@ -544,6 +566,20 @@ int ChessBoard::getArcValue(bool isBlack)
 	} else {
 		return RArcNum * 5 + NoArcNum * 5;
 	}
+}
+
+inline int ChessBoard::getSearchMoves()
+{
+	return moves.size();
+}
+
+inline bool ChessBoard::getTurn()
+{
+	return isBlackTurn;
+}
+inline void ChessBoard::getPosition(BYTE pos[][6])
+{
+	memcmp(pos, position, sizeof(BYTE) * 36);
 }
 
 BYTE * ChessBoard::operator[](int x) {

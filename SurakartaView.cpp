@@ -79,13 +79,9 @@ CSurakartaView::CSurakartaView()
 	memcpy(m_ChessBoard,InitChessBoard,36);//初始化棋盘
 	CMoveGenerator *pMG;
 	CEveluation *pEvel;
-	m_pSE=new CNegaScout;//
-	pMG=new CMoveGenerator;
-	pEvel=new CEveluation;
-	
+	m_pSE=new CNegaScout;
 	m_pSE->SetSearchDepth(4);//设定搜索层数
-	m_pSE->SetMoveGenerator(pMG);//给搜索引擎设定走法产生器
-	m_pSE->SetEveluator(pEvel);//给搜索引擎设定估值核心
+
 	m_MoveChess.nChessID=NOCHESS;//将移动的棋子清空
 }
 
@@ -350,7 +346,7 @@ void CSurakartaView::DrawChess(BYTE color[6][6])
 	CDC *pDC=GetDC();
 	CBitmap bitmap;
 	CDC dc;
-	int X,Y;
+	int x,y;
 		
 
 	for (i=0;i<6;i++)
@@ -359,23 +355,23 @@ void CSurakartaView::DrawChess(BYTE color[6][6])
 		{
 			if (color[i][j]==1)
 			{
-				X=j*50+84;
-				Y=i*50+84;
+				x=j*50+84;
+				y=i*50+84;
 				bitmap.LoadBitmap(IDB_BITMAP1);
 				dc.CreateCompatibleDC(pDC);
 				dc.SelectObject(&bitmap);
-				pDC->BitBlt(X,Y,X+50,Y+50,&dc,0,0,SRCCOPY);
+				pDC->BitBlt(x,y,x+50,y+50,&dc,0,0,SRCCOPY);
 				dc.DeleteDC();
 				bitmap.DeleteObject();
 			}
 			if (color[i][j]==2)
 			{
-				X=j*50+84;
-				Y=i*50+84;
+				x=j*50+84;
+				y=i*50+84;
 				bitmap.LoadBitmap(IDB_BITMAP2);
 				dc.CreateCompatibleDC(pDC);
 				dc.SelectObject(&bitmap);
-				pDC->BitBlt(X,Y,X+50,Y+50,&dc,0,0,SRCCOPY);
+				pDC->BitBlt(x,y,x+50,y+50,&dc,0,0,SRCCOPY);
 				dc.DeleteDC();
 				bitmap.DeleteObject();
 			}

@@ -43,34 +43,11 @@ void CSearchEngine::UnMakeMove(CHESSMOVE *move ,BYTE nChessID) {//恢复棋盘
 	CurPosition[move->To.x][move->To.y]=nChessID;
 }
 
-int CSearchEngine::IsGameOver(BYTE position[6][6],int nDepth ) {//未结束返回0，结束返回极大/极小值
-{
-int i,j;
-BOOL RedWin=TRUE,BlackWin=TRUE;
-for (i=0;i<6;i++)
-{
-	for (j=0;j<6;j++)
-	{
-		if(position[i][j]==1)
-			RedWin=FALSE;
-		if(position[i][j]==2)
-			BlackWin=FALSE;
+int CSearchEngine::isGameOver() {//未结束返回0，结束返回极大/极小值
+	if (int type = chessBoard.isGameOver()) {
+		int score = MAX_INT - chessBoard.getSearchMoves() - 1;
+		return ((type == B_WIN) ^ isBlackPlay) ? -score : score; //异或
 	}
-}
-i=(m_nMaxDepth-nDepth+1)%2;
-if (RedWin)
-{
-	if(i)
-		return 19990+nDepth;
 	else
-		return -19990-nDepth;
-}
-if (BlackWin)
-{
-	if(i)
-		return -19990-nDepth;
-	else
-		return 19990+nDepth;
-}
-return 0;
+		return 0;
 }

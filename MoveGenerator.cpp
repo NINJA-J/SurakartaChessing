@@ -36,7 +36,18 @@ CMoveGenerator::CMoveGenerator() {
 	listMaxSpace = 0;
 }
 
+CMoveGenerator::CMoveGenerator(ChessBoard & _board) {
+	board = &_board;
+	listOutput = NULL;
+	listMaxSpace = 0;
+}
+
 CMoveGenerator::~CMoveGenerator() { }
+
+void CMoveGenerator::setChessBoard(ChessBoard & _board)
+{
+	this->board = &_board;
+}
 
 BOOL CMoveGenerator::IsValidMove(BYTE position[6][6], int nFromX, int nFromY, int nToX, int nToY) {
 	/* 一些改进

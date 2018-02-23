@@ -11,6 +11,7 @@
 
 #include "MoveGenerator.h"
 #include "ChessBoard.h"
+#include <unordered_map>
 
 typedef struct valueVector {
 	int pValue;
@@ -90,15 +91,29 @@ double operator*(WeightVector weight, ValueVector value) {
 	return sum;
 }
 
+struct valUnion {
+	int depth;
+	int value;
+	valUnion(int d, int v) :depth(d), value(v) {};
+	valUnion() {};
+};
 
 class CEveluation  
 {
 public:
 	CEveluation();
+	CEveluation(ChessBoard& board);
 	virtual ~CEveluation();
+	void setChessBoard(ChessBoard &board);
+
 	virtual int evaluate(BYTE position[6][6],BOOL bIsBlackTurn);//估值函数，对传入的棋盘打分，bIsBlackTurn代表轮到谁走棋
+	virtual int evaluate();
 	void GetAttackInfo(BYTE position[6][6]);
 	int GetArcValue(BYTE position[6][6], BOOL bIsBlackTurn);//用于计算占弧价值
+
+	inline bool getBoardValue(ID_TYPE id, int depth, int &value);
+	inline bool addBoardValue(ID_TYPE id, int depth, int value);
+
 	BYTE m_AttackPos[6][6];
 	BYTE m_ProtectPos[6][6];
 	BYTE m_MovePos[6][6];
@@ -107,6 +122,7 @@ private:
 	ChessBoard* chessBoard;
 	ValueVector bValue, rValue;
 	WeightVector weights[5];
+	unordered_map<ID_TYPE,valUnion> boardValue;
 
 	void pointProc(int x, int y);
 	void arcPointProc(bool isOuter, int index);

@@ -33,7 +33,7 @@ private:
 
 	int moveCount;
 	CHESSMOVE** moveList;
-	stack<CHESSMOVE> moves;
+	stack<CHESSMOVE> moves,cMoves;
 
 	static const int posScore[3][6][6];
 	static const BYTE defaultStartBoard[6][6];
@@ -51,7 +51,7 @@ private:
 public:
 	ChessBoard(bool isBlackFirst = true);
 	ChessBoard(BYTE position[6][6], bool isBlackFirst = true);
-	bool setChessPosition(const BYTE position[6][6]);
+	bool setChessPosition(const BYTE position[6][6], bool isBlackFirst = true);
 
 	bool setChessTurn(bool isBlackTurn);
 	int getChessTurn();
@@ -70,18 +70,22 @@ public:
 
 	void move(int fX, int fY, int tX, int tY);
 	void move(CHESSMOVE move);
+	void cMove(CHESSMOVE move);
 	void unMove();
 	inline ID_TYPE getId();
 	inline ID_TYPE getIdRaw();
 	int finishedMoves();
 	int isGameOver();//在搜索中用到，表示某一方的搜索树的终局
 
-	int getPValue(bool isBlack);
-	int getAValue(bool isBlack);
-	int getMValue(bool isBlack);
-	int getPosValue(bool isBlack);
-	int getNums(bool isBlack);
-	int getArcValue(bool isBlack);
+	inline int getPValue(bool isBlack);
+	inline int getAValue(bool isBlack);
+	inline int getMValue(bool isBlack);
+	inline int getPosValue(bool isBlack);
+	inline int getNums(bool isBlack);
+	inline int getArcValue(bool isBlack);
+	inline int getSearchMoves();
+	inline bool getTurn();
+	inline void getPosition(BYTE pos[][6]);
 
 	BYTE* operator[](int x);
 	BYTE& operator[](CHESSNAMPOS pos);
