@@ -15,12 +15,11 @@ static char THIS_FILE[]=__FILE__;
 // Construction/Destruction
 ///////////////////// /////////////////////////////////////////////////
 //#define ABDebug
-CNegaScout::CNegaScout()
-{
+CNegaScout::CNegaScout() {
 //	top=-1;
 	flag1=0;
 	flag2=0;
-	m_pEval = new CEveluation(chessBoard);
+	m_pEval = new CEvaluation(chessBoard);
 	m_pMG = new CMoveGenerator(chessBoard);
 }
 int x;
@@ -31,8 +30,6 @@ CNegaScout::~CNegaScout()
 CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6],int m_isPlayerBlack) {
 	chessBoard.setChessPosition(position, m_isPlayerBlack);
 	isBlackPlay = m_isPlayerBlack;
-	m_pMG->setChessBoard(chessBoard);
-	m_pEval->setChessBoard(chessBoard);
 	m_nMaxDepth = m_nSearchDepth;
 
 	//NegaScout_TT_HH(m_nMaxDepth,0,m_isPlayerBlack);
@@ -218,8 +215,8 @@ int CNegaScout::negaScoutMinWin(int depth, int m_Type, int alpha, int beta)
 	for (int i = 0; i < count; i++) {
 		chessBoard.move(moveList[x]);
 		int t = isMax ?
-			NegaScout_ABTree(depth - 1, m_Type, best, MAX_INT) :
-			NegaScout_ABTree(depth - 1, m_Type, MIN_INT, best);
+			negaScoutMinWin(depth - 1, m_Type, best, MAX_INT) :
+			negaScoutMinWin(depth - 1, m_Type, MIN_INT, best);
 		chessBoard.unMove();
 
 		if (isMax) {

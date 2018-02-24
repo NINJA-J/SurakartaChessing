@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "Define.h"
-#include "Eveluation.h"
+#include "Evaluation.h"
 #include <stack>
 
 typedef unsigned long long int ID_TYPE;
@@ -35,20 +35,13 @@ private:
 	CHESSMOVE** moveList;
 	stack<CHESSMOVE> moves,cMoves;
 
-	static const int posScore[3][6][6];
 	static const BYTE defaultStartBoard[6][6];
 
 	int addMove(int nFromX, int nToX, int nFromY, int nToY);
-	void inidIdList();
+	void initIdList();
 
-	int bValue ,rValue ;//总的评估值
-	int bPValue , rPValue ;
-	int bAValue , rAValue ;
-	int bMValue , rMValue ;//用来表示可移动分值
-	int bPosValue , rPosValue ;
 	int bNum , rNum ;//红方，黑方棋子数量
-	int bArcValue , rArcValue;//占弧值
-public:
+public: 
 	ChessBoard(bool isBlackFirst = true);
 	ChessBoard(BYTE position[6][6], bool isBlackFirst = true);
 	bool setChessPosition(const BYTE position[6][6], bool isBlackFirst = true);
@@ -56,33 +49,17 @@ public:
 	bool setChessTurn(bool isBlackTurn);
 	int getChessTurn();
 
-	bool isValidMove(int nFromX, int nFromY, int nToX, int nToY);
-	//产生给定棋盘上的所有合法的走法
-	int createPossibleMove(CHESSMOVE* moveList, int nSide);
-	int analysis();
-	int value();
-	void boardIteration(
-		void(*pointProc)(int,int),
-		void(*arcPointProc)(bool,int), 
-		void(*stepProc)(int,int,int,int), 
-		void(*eatProc)(bool,int,int)
-	);
-
 	void move(int fX, int fY, int tX, int tY);
 	void move(CHESSMOVE move);
 	void cMove(CHESSMOVE move);
 	void unMove();
-	inline ID_TYPE getId();
-	inline ID_TYPE getIdRaw();
 	int finishedMoves();
 	int isGameOver();//在搜索中用到，表示某一方的搜索树的终局
 
-	inline int getPValue(bool isBlack);
-	inline int getAValue(bool isBlack);
-	inline int getMValue(bool isBlack);
-	inline int getPosValue(bool isBlack);
+	inline int getLoopStart(int arc);
+	inline ID_TYPE getId();
+	inline ID_TYPE getIdRaw();
 	inline int getNums(bool isBlack);
-	inline int getArcValue(bool isBlack);
 	inline int getSearchMoves();
 	inline bool getTurn();
 	inline void getPosition(BYTE pos[][6]);

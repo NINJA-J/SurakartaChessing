@@ -261,23 +261,13 @@ int CMoveGenerator::createPossibleMoves(CHESSMOVE * list, int maxSize) {
 	listOutput = list;
 	listMaxSpace = maxSize;
 	moveCount = 0;
-	int checkStart[2] = { -1,-1 };
 	int nSide = board->getChessTurn();
-
-	for (int arc = INNER; arc <= OUTER; arc++) {
-		for (int i = 0; i < 24; i++) {
-			if (board->pArc(arc, i)) {
-				checkStart[arc] = i;//sssssss
-				break;
-			}
-		}
-	}
 
 	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
 	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
-		if (checkStart[arc] != -1) { //判断当前弧上有点
+		if (board->getLoopStart(arc) != -1) { //判断当前弧上有点
 			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
-				s = checkStart[arc];
+				s = board->getLoopStart(arc);
 				e = (s + dir) % 24;
 				colorS = board->pArc(arc,s);//保留起点颜色，起点置空，和旧函数思路一样
 				board->pArc(arc, s) = 0;

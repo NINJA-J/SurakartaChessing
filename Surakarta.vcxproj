@@ -133,7 +133,7 @@
   <ItemGroup>
     <ClCompile Include="ChessBoard.cpp" />
     <ClCompile Include="Define.cpp" />
-    <ClCompile Include="Eveluation.cpp" />
+    <ClCompile Include="Evaluation.cpp" />
     <ClCompile Include="MainFrm.cpp" />
     <ClCompile Include="MoveGenerator.cpp" />
     <ClCompile Include="NegaScout.cpp" />
@@ -156,7 +156,7 @@
   <ItemGroup>
     <ClInclude Include="ChessBoard.h" />
     <ClInclude Include="Define.h" />
-    <ClInclude Include="Eveluation.h" />
+    <ClInclude Include="Evaluation.h" />
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="MoveGenerator.h" />
     <ClInclude Include="NegaScout.h" />

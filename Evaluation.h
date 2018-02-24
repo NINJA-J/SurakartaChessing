@@ -1,4 +1,4 @@
-// Eveluation.h: interface for the CEveluation class.
+// Evaluation.h: interface for the CEveluation class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -20,6 +20,11 @@ typedef struct valueVector {
 	int posValue;
 	int numValue;//红方，黑方棋子数量
 	int arcValue;//占弧值
+
+	valueVector(){
+		pValue = aValue = mValue = posValue = numValue = arcValue = 0;
+	}
+
 	ValueVector operator-(const ValueVector & b)const {
 		ValueVector temp;
 		temp.pValue = pValue - b.pValue; temp.aValue = aValue - b.aValue; temp.mValue = mValue - b.mValue;
@@ -43,6 +48,12 @@ typedef struct weightVector {
 	double posValue;
 	double numValue;//红方，黑方棋子数量
 	double arcValue;//占弧值
+	WeightVector() {};
+	WeightVector(double p, double a, double m, double pos, double num, double arc) {
+		pValue = p; aValue = a; mValue = m;
+		posValue = pos; numValue = num; arcValue = arc;
+		normalize();
+	};
 	WeightVector operator-(const WeightVector & b)const {
 		WeightVector temp;
 		temp.pValue = pValue - b.pValue; temp.aValue = aValue - b.aValue; temp.mValue = mValue - b.mValue;
@@ -59,12 +70,14 @@ typedef struct weightVector {
 	}
 	inline WeightVector normalize() {
 		double total = pValue + aValue + mValue + posValue + numValue + arcValue;
-		pValue /= total;
-		aValue /= total;
-		mValue /= total;
-		posValue /= total;
-		numValue /= total;
-		arcValue /= total;
+		if (total != 0) {
+			pValue /= total;
+			aValue /= total;
+			mValue /= total;
+			posValue /= total;
+			numValue /= total;
+			arcValue /= total;
+		}
 		return *this;
 	}
 }WeightVector;
@@ -98,21 +111,24 @@ struct valUnion {
 	valUnion() {};
 };
 
-class CEveluation  
+class CEvaluation  
 {
 public:
-	CEveluation();
-	CEveluation(ChessBoard& board);
-	virtual ~CEveluation();
+	CEvaluation();
+	CEvaluation(ChessBoard& board);
+	virtual ~CEvaluation();
 	void setChessBoard(ChessBoard &board);
 
 	virtual int evaluate(BYTE position[6][6],BOOL bIsBlackTurn);//估值函数，对传入的棋盘打分，bIsBlackTurn代表轮到谁走棋
 	virtual int evaluate();
+	virtual ValueVector analysis(bool isBlackTurn);
+
 	void GetAttackInfo(BYTE position[6][6]);
 	int GetArcValue(BYTE position[6][6], BOOL bIsBlackTurn);//用于计算占弧价值
 
 	inline bool getBoardValue(ID_TYPE id, int depth, int &value);
 	inline bool addBoardValue(ID_TYPE id, int depth, int value);
+	inline int getArcValue(bool isBlack);
 
 	BYTE m_AttackPos[6][6];
 	BYTE m_ProtectPos[6][6];
@@ -123,6 +139,8 @@ private:
 	ValueVector bValue, rValue;
 	WeightVector weights[5];
 	unordered_map<ID_TYPE,valUnion> boardValue;
+
+	static const int posScore[3][6][6];
 
 	void pointProc(int x, int y);
 	void arcPointProc(bool isOuter, int index);
@@ -144,4 +162,4 @@ private:
 						5,20,20,20,20,5 };
 };
 
-#endif // !defined(AFX_EVELUATION_H__D5138E45_7853_40AB_80A8_5D7BB3E091F8__INCLUDED_)
+#endif // !defined(AFX_Evaluation_H__D5138E45_7853_40AB_80A8_5D7BB3E091F8__INCLUDED_)
