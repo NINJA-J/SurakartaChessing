@@ -8,7 +8,7 @@
 #include "SurakartaView.h"
 #include "NewGame.h"
 #include "Define.h"
-#include "Eveluation.h"
+#include "Evaluation.h"
 #include "MoveGenerator.h"
 #include "SearchEngine.h"
 #include "NegaScout.h"
@@ -77,9 +77,7 @@ CSurakartaView::CSurakartaView()
     m_isPlayerTurn=TRUE;
 	
 	memcpy(m_ChessBoard,InitChessBoard,36);//初始化棋盘
-	CMoveGenerator *pMG;
-	CEveluation *pEvel;
-	m_pSE=new CNegaScout;
+	m_pSE = new CNegaScout();
 	m_pSE->SetSearchDepth(4);//设定搜索层数
 
 	m_MoveChess.nChessID=NOCHESS;//将移动的棋子清空
@@ -310,7 +308,7 @@ void CSurakartaView::OnSet()
 {
 	// TODO: Add your command handler code here
 	CMoveGenerator *pMG;
-	CEveluation *pEvel;
+	CEvaluation *pEvel;
 	CNewGame newGameDlg;
 	
 	if (newGameDlg.DoModal()==IDOK)
@@ -327,16 +325,12 @@ void CSurakartaView::OnSet()
 			break;
 		}
 		m_pSE->SetSearchDepth(newGameDlg.GetSelectedPly());
-		pEvel=new CEveluation;
 		
 	}
 	else
 		return;//维持现状
 	memcpy(m_ChessBoard,InitChessBoard,36);
 	m_MoveChess.nChessID=NOCHESS;//清除移动棋子
-	pMG=new CMoveGenerator;
-	m_pSE->SetMoveGenerator(pMG);
-	m_pSE->SetEveluator(pEvel);
 }
 
 
@@ -458,7 +452,7 @@ void CSurakartaView::OnLButtonDown(UINT nFlags, CPoint point)
 		dc.CreateCompatibleDC(pDC);
 		dc.SelectObject(&bitmap);
 		CMoveGenerator *pMG;
-		pMG=new CMoveGenerator;
+		pMG = new CMoveGenerator();
 		for ( i=75;i<375;i=i+50)
 			{
 				if (point.x>i&&point.x<i+50)

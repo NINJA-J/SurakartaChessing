@@ -25,16 +25,16 @@ typedef struct valueVector {
 		pValue = aValue = mValue = posValue = numValue = arcValue = 0;
 	}
 
-	ValueVector operator-(const ValueVector & b)const {
-		ValueVector temp;
+	valueVector operator-(const valueVector & b)const {
+		valueVector temp;
 		temp.pValue = pValue - b.pValue; temp.aValue = aValue - b.aValue; temp.mValue = mValue - b.mValue;
 		temp.posValue = posValue - b.posValue;
 		temp.numValue = numValue - b.numValue;
 		temp.arcValue = arcValue - b.arcValue;
 		return temp;
 	}
-	ValueVector operator-=(const ValueVector & b) {
-		ValueVector temp;
+	valueVector operator-=(const valueVector & b) {
+		valueVector temp;
 		pValue -= b.pValue; aValue -= b.aValue; mValue -= b.mValue;
 		posValue -= b.posValue; numValue -= b.numValue; arcValue -= b.arcValue;
 		return *this;
@@ -48,13 +48,15 @@ typedef struct weightVector {
 	double posValue;
 	double numValue;//红方，黑方棋子数量
 	double arcValue;//占弧值
-	WeightVector() {};
-	WeightVector(double p, double a, double m, double pos, double num, double arc) {
+	weightVector() {};
+
+	weightVector(double p, double a, double m, double pos, double num, double arc) {
 		pValue = p; aValue = a; mValue = m;
 		posValue = pos; numValue = num; arcValue = arc;
 		normalize();
 	};
-	WeightVector operator-(const WeightVector & b)const {
+
+	weightVector operator-(const weightVector & b)const {
 		WeightVector temp;
 		temp.pValue = pValue - b.pValue; temp.aValue = aValue - b.aValue; temp.mValue = mValue - b.mValue;
 		temp.posValue = posValue - b.posValue;
@@ -62,13 +64,15 @@ typedef struct weightVector {
 		temp.arcValue = arcValue - b.arcValue;
 		return temp.normalize();
 	}
-	WeightVector operator-=(const WeightVector & b) {
+
+	weightVector operator-=(const weightVector & b) {
 		WeightVector temp;
 		pValue -= b.pValue; aValue -= b.aValue; mValue -= b.mValue;
 		posValue -= b.posValue; numValue -= b.numValue; arcValue -= b.arcValue;
 		return this->normalize();
 	}
-	inline WeightVector normalize() {
+
+	inline weightVector normalize() {
 		double total = pValue + aValue + mValue + posValue + numValue + arcValue;
 		if (total != 0) {
 			pValue /= total;
@@ -82,40 +86,22 @@ typedef struct weightVector {
 	}
 }WeightVector;
 
-double operator*(ValueVector value, WeightVector weight) {
-	double sum = 0;
-	sum += value.pValue * weight.pValue;
-	sum += value.aValue * weight.aValue;
-	sum += value.mValue * weight.mValue;
-	sum += value.posValue * weight.posValue;
-	sum += value.numValue * weight.numValue;
-	sum += value.arcValue * weight.arcValue;
-	return sum;
-}
+double operator*(ValueVector value, WeightVector weight);
 
-double operator*(WeightVector weight, ValueVector value) {
-	double sum = 0;
-	sum += value.pValue * weight.pValue;
-	sum += value.aValue * weight.aValue;
-	sum += value.mValue * weight.mValue;
-	sum += value.posValue * weight.posValue;
-	sum += value.numValue * weight.numValue;
-	sum += value.arcValue * weight.arcValue;
-	return sum;
-}
+double operator*(WeightVector weight, ValueVector value);
 
-struct valUnion {
+class valUnion {
+public:
 	int depth;
 	int value;
 	valUnion(int d, int v) :depth(d), value(v) {};
 	valUnion() {};
 };
 
-class CEvaluation  
-{
+class CEvaluation {
 public:
 	CEvaluation();
-	CEvaluation(ChessBoard& board);
+	CEvaluation(ChessBoard &board);
 	virtual ~CEvaluation();
 	void setChessBoard(ChessBoard &board);
 
@@ -123,43 +109,20 @@ public:
 	virtual int evaluate();
 	virtual ValueVector analysis(bool isBlackTurn);
 
-	void GetAttackInfo(BYTE position[6][6]);
+	//void GetAttackInfo(BYTE position[6][6]);
 	int GetArcValue(BYTE position[6][6], BOOL bIsBlackTurn);//用于计算占弧价值
 
-	inline bool getBoardValue(ID_TYPE id, int depth, int &value);
-	inline bool addBoardValue(ID_TYPE id, int depth, int value);
-	inline int getArcValue(bool isBlack);
+	bool getBoardValue(ID_TYPE id, int depth, int &value);
+	bool addBoardValue(ID_TYPE id, int depth, int value);
+	int getArcValue(bool isBlack);
 
-	BYTE m_AttackPos[6][6];
-	BYTE m_ProtectPos[6][6];
-	BYTE m_MovePos[6][6];
-	CMoveGenerator *m_pMg;
 private:
-	ChessBoard* chessBoard;
+	ChessBoard *chessBoard;
 	ValueVector bValue, rValue;
 	WeightVector weights[5];
 	unordered_map<ID_TYPE,valUnion> boardValue;
 
 	static const int posScore[3][6][6];
-
-	void pointProc(int x, int y);
-	void arcPointProc(bool isOuter, int index);
-	void stepProc(int fx, int fy, int tx, int ty);
-	void arcStepProc(bool isOuter, int fIndex, int tIndex);
-	
-	int BlackValue,RedValue;
-	int BNum,RNum;
-	int BPosValue, RPosValue;
-	int BProtectValue,BAttactValue;
-	int RProtectValue,RAttactValue;
-	int RMoveValue,BMoveValue;
-	int RArcValue, BArcValue;
-	int PosScore[6][6] = { 5,20,20,20,20,5,
-						20,30,50,50,30,20,
-						20,50,40,40,50,50,
-						20,50,40,40,50,20,
-						20,30,50,50,30,20,
-						5,20,20,20,20,5 };
 };
 
 #endif // !defined(AFX_Evaluation_H__D5138E45_7853_40AB_80A8_5D7BB3E091F8__INCLUDED_)

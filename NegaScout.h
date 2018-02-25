@@ -24,6 +24,7 @@ protected:
 	int NegaScout_ABTree(int depth, int m_Type, int alpha = 0, int beta = 0);
 	int negaScoutMinWin(int depth, int m_Type, int alpha = MIN_INT, int beta = MAX_INT);
     CHESSMOVE m_bestMove;
+
 //	int top;
 	int flag1;
 	int flag2;

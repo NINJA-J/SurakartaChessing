@@ -15,11 +15,11 @@
 class CMoveGenerator  
 {
 public:
-	CMoveGenerator();
-	CMoveGenerator(ChessBoard&board);
+	CMoveGenerator(void);
+	CMoveGenerator(ChessBoard &board);
 	virtual ~CMoveGenerator();
 
-	void setChessBoard(ChessBoard & board);
+	void setChessBoard(ChessBoard &board);
 
 	//检查下一个走法是否合法
 	static BOOL IsValidMove(BYTE position[6][6],int nFromX,int nFromY,int nToX,int nToY);

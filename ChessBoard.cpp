@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "ChessBoard.h"
 
 const BYTE ChessBoard::defaultStartBoard[6][6] = {
@@ -85,7 +86,7 @@ int ChessBoard::getChessTurn() {
 	return isBlackTurn;
 }
 
-inline int ChessBoard::getLoopStart(int arc) {
+int ChessBoard::getLoopStart(int arc) {
 	return loopStart[arc];
 }
 
@@ -166,24 +167,25 @@ int ChessBoard::finishedMoves() {
 	return moves.size();
 }
 
-inline int ChessBoard::isGameOver() {
+int ChessBoard::isGameOver() {
 	if (bNum&&rNum) 
 		return 0;
 	return bNum ? B_WIN : R_WIN;
 }
 
-inline int ChessBoard::getNums(bool isBlack) {
+int ChessBoard::getNums(bool isBlack) {
 	return isBlack ? bNum : rNum;
 }
 
-inline int ChessBoard::getSearchMoves() {
+int ChessBoard::getSearchMoves() {
 	return moves.size();
 }
 
-inline bool ChessBoard::getTurn() {
+bool ChessBoard::getTurn() {
 	return isBlackTurn;
 }
-inline void ChessBoard::getPosition(BYTE pos[][6]) {
+
+void ChessBoard::getPosition(BYTE pos[][6]) {
 	memcmp(pos, position, sizeof(BYTE) * 36);
 }
 
@@ -196,14 +198,14 @@ BYTE & ChessBoard::operator[](CHESSNAMPOS pos)
 	return position[pos.x][pos.y];
 }
 
-inline BYTE& ChessBoard::pInner(int index){
+BYTE& ChessBoard::pInner(int index){
 	return *loop[INNER][index];
 }
 
-inline BYTE& ChessBoard::pOuter(int index) {
+BYTE& ChessBoard::pOuter(int index) {
 	return *loop[OUTER][index];
 }
 
-inline BYTE& ChessBoard::pArc(int arc, int index) {
+BYTE& ChessBoard::pArc(int arc, int index) {
 	return *loop[arc][index];
 }

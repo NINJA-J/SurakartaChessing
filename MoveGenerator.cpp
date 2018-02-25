@@ -32,6 +32,7 @@ const int CMoveGenerator::arcLoop[2][24][2] = {
 	} };
 
 CMoveGenerator::CMoveGenerator() {
+	board = NULL;
 	listOutput = NULL;
 	listMaxSpace = 0;
 }

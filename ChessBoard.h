@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 #include "Define.h"
-#include "Evaluation.h"
 #include <stack>
 
 typedef unsigned long long int ID_TYPE;
@@ -56,17 +55,17 @@ public:
 	int finishedMoves();
 	int isGameOver();//在搜索中用到，表示某一方的搜索树的终局
 
-	inline int getLoopStart(int arc);
-	inline ID_TYPE getId();
+	int getLoopStart(int arc);
+	ID_TYPE getId();
 	inline ID_TYPE getIdRaw();
-	inline int getNums(bool isBlack);
-	inline int getSearchMoves();
-	inline bool getTurn();
-	inline void getPosition(BYTE pos[][6]);
+	int getNums(bool isBlack);
+	int getSearchMoves();
+	bool getTurn();
+	void getPosition(BYTE pos[][6]);
 
 	BYTE* operator[](int x);
 	BYTE& operator[](CHESSNAMPOS pos);
 	inline BYTE& pInner(int index);
 	inline BYTE& pOuter(int index);
-	inline BYTE& pArc(int arc, int index);
+	BYTE& pArc(int arc, int index);
 };

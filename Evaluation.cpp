@@ -5,7 +5,7 @@
 #include "stdafx.h"
 #include "Surakarta.h"
 #include "Evaluation.h"
-#include<cstdlib>
+#include <cstdlib>
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[]=__FILE__;
@@ -15,6 +15,28 @@ static char THIS_FILE[]=__FILE__;
 //////////////////////////////////////////////////////////////////////6
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
+
+double operator*(WeightVector weight, ValueVector value) {
+	double sum = 0;
+	sum += value.pValue * weight.pValue;
+	sum += value.aValue * weight.aValue;
+	sum += value.mValue * weight.mValue;
+	sum += value.posValue * weight.posValue;
+	sum += value.numValue * weight.numValue;
+	sum += value.arcValue * weight.arcValue;
+	return sum;
+}
+
+double operator*(ValueVector value, WeightVector weight) {
+	double sum = 0;
+	sum += value.pValue * weight.pValue;
+	sum += value.aValue * weight.aValue;
+	sum += value.mValue * weight.mValue;
+	sum += value.posValue * weight.posValue;
+	sum += value.numValue * weight.numValue;
+	sum += value.arcValue * weight.arcValue;
+	return sum;
+}
 
 const int CEvaluation::posScore[3][6][6] = {
 	{
@@ -43,13 +65,13 @@ const int CEvaluation::posScore[3][6][6] = {
 
 CEvaluation::CEvaluation(){}
 
-CEvaluation::CEvaluation(ChessBoard & board) {
+CEvaluation::CEvaluation(ChessBoard &board) {
 	chessBoard = &board;
 }
 
 CEvaluation::~CEvaluation() {}
 
-void CEvaluation::setChessBoard(ChessBoard & board) {
+void CEvaluation::setChessBoard(ChessBoard &board) {
 	chessBoard = &board;
 }
 
@@ -71,7 +93,7 @@ int CEvaluation::evaluate(BYTE position[6][6], BOOL IsBlackturn) {
 		1  //arcWeight	- Õ¼»¡È¨Öµ
 	);
 	
-	 return  weights*analysis(IsBlackturn);
+	 return  weights * analysis(IsBlackturn);
 }
 
 int CEvaluation::evaluate()
@@ -152,7 +174,7 @@ ValueVector CEvaluation::analysis( bool isBlackTurn)
 
 	return isBlackTurn ? bVal - rVal : rVal - bVal;
 }
-
+/*
 void CEvaluation::GetAttackInfo(BYTE position[6][6])
 {
 	BYTE CurPosition[6][6];
@@ -189,7 +211,7 @@ void CEvaluation::GetAttackInfo(BYTE position[6][6])
 	}
 	memcpy(position,CurPosition,36);
 }
-
+*/
 int CEvaluation::GetArcValue(BYTE position[6][6], BOOL IsBlackturn)
 {
 	int BArcNum=0, RArcNum=0, NoArcNum=0;
@@ -254,7 +276,7 @@ int CEvaluation::GetArcValue(BYTE position[6][6], BOOL IsBlackturn)
 	}
 }
 
-inline bool CEvaluation::getBoardValue(ID_TYPE id, int depth, int & value) {
+bool CEvaluation::getBoardValue(ID_TYPE id, int depth, int & value) {
 	unordered_map<ID_TYPE, valUnion>::const_iterator iter = boardValue.find(id);
 	if (iter == boardValue.end()) return false;
 	if (iter->second.depth < depth)return false;
@@ -262,7 +284,7 @@ inline bool CEvaluation::getBoardValue(ID_TYPE id, int depth, int & value) {
 	return true;
 }
 
-inline bool CEvaluation::addBoardValue(ID_TYPE id, int depth, int value) {
+bool CEvaluation::addBoardValue(ID_TYPE id, int depth, int value) {
 	unordered_map<ID_TYPE, valUnion>::iterator iter = boardValue.find(id);
 	if (iter == boardValue.end())
 		boardValue.insert({ id,valUnion(depth,value) });
@@ -273,7 +295,7 @@ inline bool CEvaluation::addBoardValue(ID_TYPE id, int depth, int value) {
 	return true;
 }
 
-inline int CEvaluation::getArcValue(bool isBlack) {
+int CEvaluation::getArcValue(bool isBlack) {
 	int BArcNum = 0, RArcNum = 0, NoArcNum = 0;
 	int i;
 	for (i = 1; i < 5; i++) {
@@ -328,13 +350,7 @@ inline int CEvaluation::getArcValue(bool isBlack) {
 	}
 }
 
-void CEvaluation::pointProc(int x, int y)
-{
-}
 
-void CEvaluation::arcPointProc(bool isOuter, int index)
-{
-}
 
 
 

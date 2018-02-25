@@ -15,19 +15,17 @@ static char THIS_FILE[]=__FILE__;
 // Construction/Destruction
 ///////////////////// /////////////////////////////////////////////////
 //#define ABDebug
-CNegaScout::CNegaScout() {
+CNegaScout::CNegaScout(){
 //	top=-1;
 	flag1=0;
 	flag2=0;
-	m_pEval = new CEvaluation(chessBoard);
-	m_pMG = new CMoveGenerator(chessBoard);
 }
-int x;
-CNegaScout::~CNegaScout()
-{
 
-}
+CNegaScout::~CNegaScout() {}
+
 CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6],int m_isPlayerBlack) {
+	int score;
+
 	chessBoard.setChessPosition(position, m_isPlayerBlack);
 	isBlackPlay = m_isPlayerBlack;
 	m_nMaxDepth = m_nSearchDepth;
@@ -35,16 +33,13 @@ CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6],int m_isPlayerBlack) {
 	//NegaScout_TT_HH(m_nMaxDepth,0,m_isPlayerBlack);
 	//NegaScout_ABTree(m_nMaxDepth, m_isPlayerBlack);
 	negaScoutMinWin(m_nMaxDepth, m_isPlayerBlack);
-	chessBoard.cMove(bestMove);
-	int score;
-	m_pEval->getBoardValue(chessBoard.getId(), 0, score);
-	chessBoard.getPosition(position);
+	m_pEval.getBoardValue(chessBoard.getId(), 0, score);
 
-	//CString temp;
-	//temp.Format("走法：%d%d%d%d",m_cmBestMove.From.x,m_cmBestMove.From.y,  m_cmBestMove.To.x, m_cmBestMove.To.y);
-	//AfxMessageBox(temp);
 	CString temp;
-	temp.Format("分数：%d",score);
+	temp.Format(
+		"走法：%d%d%d%d\n分数：%d", 
+		bestMove.From.x, bestMove.From.y, bestMove.To.x, bestMove.To.y, score
+	);
 	AfxMessageBox(temp);
 	return bestMove;
 }
@@ -67,10 +62,10 @@ int CNegaScout::NegaScout_TT_HH(int depth,int num,int m_Type)
 
 	
 	if (depth <= 0){	//叶子节点取估值
-		return m_pEval->evaluate();
+		return m_pEval.evaluate();
 	}
 
-	Count = m_pMG->createPossibleMoves(mList,200);//返回下一步多少种走法
+	Count = m_pMG.createPossibleMoves(mList,200);//返回下一步多少种走法
 
 	for (i = 0; i < Count; i++)
 	{
@@ -155,13 +150,12 @@ int CNegaScout::NegaScout_ABTree(int depth, int m_Type, int alpha, int beta) {
 		//temp.Format("x:%d", x);
 		//AfxMessageBox(temp);
 		
-		return m_pEval->evaluate();//叶结点
+		return m_pEval.evaluate();//叶结点
 	}
 
-	int count = m_pMG->createPossibleMoves(moveList,200);
+	int count = m_pMG.createPossibleMoves(moveList,200);
 
 	for (int i = 0; i < count; i++) {
-		x++;
 		chessBoard.move(moveList[i]);//
 		int t = isMax ?
 			NegaScout_ABTree(depth - 1, m_Type, best, MAX_INT) :
@@ -207,13 +201,13 @@ int CNegaScout::negaScoutMinWin(int depth, int m_Type, int alpha, int beta)
 	int best = isMax ? MIN_INT : MAX_INT;//初始化搜索的估值的最值
 
 	if (int i = isGameOver()) return i;//终局
-	if (depth <= 0) return m_pEval->evaluate();//叶结点
-	if (m_pEval->getBoardValue(chessBoard.getId(), depth, best)) return best;
+	if (depth <= 0) return m_pEval.evaluate();//叶结点
+	if (m_pEval.getBoardValue(chessBoard.getId(), depth, best)) return best;
 
-	int count = m_pMG->createPossibleMoves(moveList, 200);
+	int count = m_pMG.createPossibleMoves(moveList, 200);
 
 	for (int i = 0; i < count; i++) {
-		chessBoard.move(moveList[x]);
+		chessBoard.move(moveList[i]);
 		int t = isMax ?
 			negaScoutMinWin(depth - 1, m_Type, best, MAX_INT) :
 			negaScoutMinWin(depth - 1, m_Type, MIN_INT, best);
@@ -222,18 +216,18 @@ int CNegaScout::negaScoutMinWin(int depth, int m_Type, int alpha, int beta)
 		if (isMax) {
 			if (best < t) { //获得更大的估值
 				alpha = best = t; //更新最值和alpha
-				if (depth == m_nMaxDepth) bestMove = moveList[x];
+				if (depth == m_nMaxDepth) bestMove = moveList[i];
 			}
 			if (best >= beta) return best; //无法使上层变小，剪枝
 		}
 		else {
 			if (best > t) {
 				beta = best = t;
-				if (depth == m_nMaxDepth) bestMove = moveList[x];
+				if (depth == m_nMaxDepth) bestMove = moveList[i];
 			}
 			if (best <= alpha) return best;
 		}
 	}
-	m_pEval->addBoardValue(chessBoard.getId(), depth, best);
+	m_pEval.addBoardValue(chessBoard.getId(), depth, best);
 	return best;//返回最值
 }

@@ -16,16 +16,13 @@ static char THIS_FILE[]=__FILE__;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CSearchEngine::CSearchEngine()
-{
+CSearchEngine::CSearchEngine():
+	chessBoard(B_PLAYING),
+	m_pEval(chessBoard),
+	m_pMG(chessBoard){}
 
-}
+CSearchEngine::~CSearchEngine() {}
 
-CSearchEngine::~CSearchEngine()
-{
-	delete m_pMG;
-	delete m_pEval;
-}
 BYTE CSearchEngine::MakeMove(CHESSMOVE *move)//由传入的走法改变棋盘
 {
 	BYTE Side;
