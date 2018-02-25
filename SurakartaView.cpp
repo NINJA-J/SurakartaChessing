@@ -318,10 +318,10 @@ void CSurakartaView::OnSet()
 		switch(newGameDlg.GetSelectedEngine())
 		{
 		case 0:
-			m_pSE=new CNegaScout;
+			m_pSE=new CNegaScout();
 			break;
 		default:
-			m_pSE=new CNegaScout;
+			m_pSE=new CNegaScout();
 			break;
 		}
 		m_pSE->SetSearchDepth(newGameDlg.GetSelectedPly());
