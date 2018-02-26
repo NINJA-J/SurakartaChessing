@@ -83,7 +83,7 @@ CSurakartaView::CSurakartaView()
 	pMG=new CMoveGenerator;
 	pEvel=new CEveluation;
 	
-	m_pSE->SetSearchDepth(8);//设定搜索层数
+	m_pSE->SetSearchDepth(5);//设定搜索层数
 	m_pSE->SetMoveGenerator(pMG);//给搜索引擎设定走法产生器
 	m_pSE->SetEveluator(pEvel);//给搜索引擎设定估值核心
 	m_MoveChess.nChessID=NOCHESS;//将移动的棋子清空
