@@ -17,9 +17,7 @@ static char THIS_FILE[]=__FILE__;
 //////////////////////////////////////////////////////////////////////
 
 CSearchEngine::CSearchEngine():
-	chessBoard(B_PLAYING),
-	m_pEval(chessBoard),
-	m_pMG(chessBoard){}
+	chessBoard(B_PLAYING){}
 
 CSearchEngine::~CSearchEngine() {}
 

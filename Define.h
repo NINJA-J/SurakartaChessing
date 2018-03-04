@@ -21,11 +21,6 @@
 #define IsRed(x) (x==2)
 #define IsSameSide(x,y) ((IsBlack(x)&&IsBlack(y))||(IsRed(x)&&IsRed(y)))
 
-#ifndef max(x,y)
-#define max(x,y) (((x)>(y))?(x):(y))
-#define min(x,y) (((x)<(y))?(x):(y))
-#endif // !max(x,y)
-
 const int arcLoop[2][24][2] = {
 	{   //ÄÚ»¡
 		{ 1,0 },{ 1,1 },{ 1,2 },{ 1,3 },{ 1,4 },{ 1,5 },

@@ -101,23 +101,19 @@ public:
 class CEvaluation {
 public:
 	CEvaluation();
-	CEvaluation(ChessBoard &board);
 	virtual ~CEvaluation();
-	void setChessBoard(ChessBoard &board);
 
-	virtual int evaluate(BYTE position[6][6],BOOL bIsBlackTurn);//估值函数，对传入的棋盘打分，bIsBlackTurn代表轮到谁走棋
-	virtual int evaluate();
-	virtual ValueVector analysis(bool isBlackTurn);
+	virtual double evaluate(ChessBoard &board, bool isBlackTurn);//估值函数，对传入的棋盘打分，bIsBlackTurn代表轮到谁走棋
+	virtual ValueVector analysis(ChessBoard &board, bool isBlackTurn);
 
 	//void GetAttackInfo(BYTE position[6][6]);
 	int GetArcValue(BYTE position[6][6], BOOL bIsBlackTurn);//用于计算占弧价值
 
 	bool getBoardValue(ID_TYPE id, int depth, int &value);
 	bool addBoardValue(ID_TYPE id, int depth, int value);
-	int getArcValue(bool isBlack);
+	int getArcValue(ChessBoard &board, bool isBlack);
 
 private:
-	ChessBoard *chessBoard;
 	ValueVector bValue, rValue;
 	WeightVector weights[5];
 	unordered_map<ID_TYPE,valUnion> boardValue;

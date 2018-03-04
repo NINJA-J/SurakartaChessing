@@ -32,23 +32,16 @@ const int CMoveGenerator::arcLoop[2][24][2] = {
 	} };
 
 CMoveGenerator::CMoveGenerator() {
-	board = NULL;
 	listOutput = NULL;
 	listMaxSpace = 0;
 }
 
 CMoveGenerator::CMoveGenerator(ChessBoard & _board) {
-	board = &_board;
 	listOutput = NULL;
 	listMaxSpace = 0;
 }
 
 CMoveGenerator::~CMoveGenerator() { }
-
-void CMoveGenerator::setChessBoard(ChessBoard & _board)
-{
-	this->board = &_board;
-}
 
 BOOL CMoveGenerator::IsValidMove(BYTE position[6][6], int nFromX, int nFromY, int nToX, int nToY) {
 	/* 一些改进
@@ -138,7 +131,7 @@ BOOL CMoveGenerator::IsValidMove(BYTE position[6][6], int nFromX, int nFromY, in
 		for (int i = 0; i < 24; i++) {
 			for (int arc = INNER; arc <= OUTER; arc++) {  //对内外两个弧分别生成链表
 				colorLoop[i][arc][COLOR] =
-					position[arcLoop[arc][i][X]][arcLoop[arc][i][Y]];
+					position[arcLoop[arc][i][PX]][arcLoop[arc][i][PY]];
 				colorLoop[i][arc][LAST] = colorLoop[i][arc][NEXT] = -1; //链表节点初始化
 																		/*colorLoop[i][arc][...] ==> 循环链表中arc弧上第i个节点的 颜色/前驱下标/后继下标
 																		//arcLoop[arc][i][..] ==> 弧位置数组中arc弧上的第i个节点的 X坐标/Y坐标
@@ -177,11 +170,11 @@ BOOL CMoveGenerator::IsValidMove(BYTE position[6][6], int nFromX, int nFromY, in
 
 					for (int dir = LAST; dir <= NEXT; dir++) {  //双向检查
 						edIndex = colorLoop[stIndex][arc][dir];
-						if (arcLoop[arc][edIndex][X] == nFromX &&
-							arcLoop[arc][edIndex][Y] == nFromY)
+						if (arcLoop[arc][edIndex][PX] == nFromX &&
+							arcLoop[arc][edIndex][PY] == nFromY)
 							edIndex = colorLoop[edIndex][arc][dir];//95-98行情况
-						if (arcLoop[arc][edIndex][X] == nToX &&
-							arcLoop[arc][edIndex][Y] == nToY) {
+						if (arcLoop[arc][edIndex][PX] == nToX &&
+							arcLoop[arc][edIndex][PY] == nToY) {
 							if (stIndex / 6 != edIndex / 6) return true;
 							if (dir == LAST && stIndex < edIndex) return true;//见76-80
 							if (dir == NEXT && stIndex > edIndex) return true;//见76-80
@@ -257,37 +250,37 @@ int CMoveGenerator::CreatePossibleMove(BYTE position[6][6],int nPly,int nSide) {
 }
 */
 
-int CMoveGenerator::createPossibleMoves(CHESSMOVE * list, int maxSize) {
+int CMoveGenerator::createPossibleMoves(ChessBoard &board,CHESSMOVE * list, int maxSize) {
 	if (list == NULL || maxSize == 0) return 0;
 	listOutput = list;
 	listMaxSpace = maxSize;
 	moveCount = 0;
-	int nSide = board->getChessTurn();
+	int nSide = board.getChessTurn();
 
 	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
 	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
-		if (board->getLoopStart(arc) != -1) { //判断当前弧上有点
+		if (board.getLoopStart(arc) != -1) { //判断当前弧上有点
 			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
-				s = board->getLoopStart(arc);
+				s = board.getLoopStart(arc);
 				e = (s + dir) % 24;
-				colorS = board->pArc(arc,s);//保留起点颜色，起点置空，和旧函数思路一样
-				board->pArc(arc, s) = 0;
+				colorS = board.pArc(arc,s);//保留起点颜色，起点置空，和旧函数思路一样
+				board.pArc(arc, s) = 0;
 				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
-					colorE = board->pArc(arc, e);// *loop[arc][e];
+					colorE = board.pArc(arc, e);// *loop[arc][e];
 					if (colorE) {
 						if (colorS + nSide == 2 && colorE - nSide == 1 && s / 6 != e / 6) {
 							addMove(CHESSMOVE(
-								arcLoop[arc][s][X], arcLoop[arc][s][Y],
-								arcLoop[arc][e][X], arcLoop[arc][e][Y],
+								arcLoop[arc][s][PX], arcLoop[arc][s][PY],
+								arcLoop[arc][e][PX], arcLoop[arc][e][PY],
 								nSide, false));
 						}
-						board->pArc(arc, s) = colorS;//恢复起点颜色，继续搜索
+						board.pArc(arc, s) = colorS;//恢复起点颜色，继续搜索
 						s = e; //终点置为新起点
-						colorS = board->pArc(arc, s);//保留起点颜色，起点置空，和旧函数思路一样
-						board->pArc(arc, s) = 0;
+						colorS = board.pArc(arc, s);//保留起点颜色，起点置空，和旧函数思路一样
+						board.pArc(arc, s) = 0;
 					}
 				}
-				if (!board->pArc(arc, s)) board->pArc(arc, s) = colorS;
+				if (!board.pArc(arc, s)) board.pArc(arc, s) = colorS;
 			}
 		}
 	}
@@ -295,12 +288,12 @@ int CMoveGenerator::createPossibleMoves(CHESSMOVE * list, int maxSize) {
 	//生成走子着法
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
-			if ((*board)[i][j] == 2 - nSide) {
+			if (board[i][j] == 2 - nSide) {
 				for (int x = -1; x <= 1; x++) {
 					for (int y = -1; y <= 1; y++) {
 						if (0 <= x + i && x + i < 6 &&
 							0 <= y + j && y + j < 6 &&
-							(*board)[x + i][y + j] == 0) {
+							board[x + i][y + j] == 0) {
 							addMove(CHESSMOVE(i, j, x + i, y + j, nSide, true));
 
 						}
@@ -316,15 +309,6 @@ inline void CMoveGenerator::addMove(CHESSMOVE move) {
 	if (listOutput&&moveCount < listMaxSpace) {
 		listOutput[moveCount++] = move;
 	}
-}
-
-inline void CMoveGenerator::move(CHESSMOVE move) {
-	board->move(move);
-	listOutput = NULL;
-}
-
-inline void CMoveGenerator::unMove() {
-	board->unMove();
 }
 
 /*

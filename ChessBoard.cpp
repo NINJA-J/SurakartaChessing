@@ -42,7 +42,7 @@ ChessBoard::ChessBoard(bool isBlackFirst) {
 
 	for (int i = 0; i < 24; i++) {
 		for (int arc = INNER; arc <= OUTER; arc++) {
-			loop[arc][i] = &(this->position[arcLoop[arc][i][X]][arcLoop[arc][i][Y]]);
+			loop[arc][i] = &(this->position[arcLoop[arc][i][PX]][arcLoop[arc][i][PY]]);
 		}
 	}
 	loopStart[INNER] = loopStart[OUTER] = -1;
@@ -55,7 +55,7 @@ ChessBoard::ChessBoard(BYTE position[6][6], bool isBlackFirst) {
 
 	for (int i = 0; i < 24; i++) {
 		for (int arc = INNER; arc <= OUTER; arc++) {
-			loop[arc][i] = &(this->position[arcLoop[arc][i][X]][arcLoop[arc][i][Y]]);
+			loop[arc][i] = &(this->position[arcLoop[arc][i][PX]][arcLoop[arc][i][PY]]);
 		}
 	}
 	loopStart[INNER] = loopStart[OUTER] = -1;

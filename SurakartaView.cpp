@@ -77,9 +77,15 @@ CSurakartaView::CSurakartaView()
     m_isPlayerTurn=TRUE;
 	
 	memcpy(m_ChessBoard,InitChessBoard,36);//初始化棋盘
-	m_pSE = new CNegaScout();
+	CMoveGenerator *pMG;
+	CEvaluation *pEvel;
+	m_pSE = new CNegaScout;//
+	pMG = new CMoveGenerator;
+	pEvel = new CEvaluation;
+	
 	m_pSE->SetSearchDepth(4);//设定搜索层数
-
+	m_pSE->SetMoveGenerator(pMG);//给搜索引擎设定走法产生器
+	m_pSE->SetEveluator(pEvel);//给搜索引擎设定估值核心
 	m_MoveChess.nChessID=NOCHESS;//将移动的棋子清空
 }
 
@@ -318,19 +324,23 @@ void CSurakartaView::OnSet()
 		switch(newGameDlg.GetSelectedEngine())
 		{
 		case 0:
-			m_pSE=new CNegaScout();
+			m_pSE=new CNegaScout;
 			break;
 		default:
-			m_pSE=new CNegaScout();
+			m_pSE=new CNegaScout;
 			break;
 		}
 		m_pSE->SetSearchDepth(newGameDlg.GetSelectedPly());
+		pEvel=new CEvaluation;
 		
 	}
 	else
 		return;//维持现状
 	memcpy(m_ChessBoard,InitChessBoard,36);
 	m_MoveChess.nChessID=NOCHESS;//清除移动棋子
+	pMG=new CMoveGenerator;
+	m_pSE->SetMoveGenerator(pMG);
+	m_pSE->SetEveluator(pEvel);
 }
 
 
@@ -340,7 +350,7 @@ void CSurakartaView::DrawChess(BYTE color[6][6])
 	CDC *pDC=GetDC();
 	CBitmap bitmap;
 	CDC dc;
-	int x,y;
+	int X,Y;
 		
 
 	for (i=0;i<6;i++)
@@ -349,23 +359,23 @@ void CSurakartaView::DrawChess(BYTE color[6][6])
 		{
 			if (color[i][j]==1)
 			{
-				x=j*50+84;
-				y=i*50+84;
+				X=j*50+84;
+				Y=i*50+84;
 				bitmap.LoadBitmap(IDB_BITMAP1);
 				dc.CreateCompatibleDC(pDC);
 				dc.SelectObject(&bitmap);
-				pDC->BitBlt(x,y,x+50,y+50,&dc,0,0,SRCCOPY);
+				pDC->BitBlt(X,Y,X+50,Y+50,&dc,0,0,SRCCOPY);
 				dc.DeleteDC();
 				bitmap.DeleteObject();
 			}
 			if (color[i][j]==2)
 			{
-				x=j*50+84;
-				y=i*50+84;
+				X=j*50+84;
+				Y=i*50+84;
 				bitmap.LoadBitmap(IDB_BITMAP2);
 				dc.CreateCompatibleDC(pDC);
 				dc.SelectObject(&bitmap);
-				pDC->BitBlt(x,y,x+50,y+50,&dc,0,0,SRCCOPY);
+				pDC->BitBlt(X,Y,X+50,Y+50,&dc,0,0,SRCCOPY);
 				dc.DeleteDC();
 				bitmap.DeleteObject();
 			}
@@ -452,7 +462,7 @@ void CSurakartaView::OnLButtonDown(UINT nFlags, CPoint point)
 		dc.CreateCompatibleDC(pDC);
 		dc.SelectObject(&bitmap);
 		CMoveGenerator *pMG;
-		pMG = new CMoveGenerator();
+		pMG=new CMoveGenerator;
 		for ( i=75;i<375;i=i+50)
 			{
 				if (point.x>i&&point.x<i+50)

@@ -6,8 +6,8 @@
 
 typedef unsigned long long int ID_TYPE;
 
-#define X 0
-#define Y 1
+#define PX 0
+#define PY 1
 
 #define INNER 0
 #define OUTER 1
