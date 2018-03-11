@@ -40,7 +40,7 @@ void CSearchEngine::UnMakeMove(CHESSMOVE *move ,BYTE nChessID) {//恢复棋盘
 
 int CSearchEngine::isGameOver() {//未结束返回0，结束返回极大/极小值
 	if (int type = chessBoard.isGameOver()) {
-		int score = MAX_INT - chessBoard.getSearchMoves() - 1;
+		int score = MAX_INT - chessBoard.getMoves() - 1;
 		return ((type == B_WIN) ^ isBlackPlay) ? -score : score; //异或
 	}
 	else

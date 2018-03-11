@@ -21,6 +21,26 @@
 #define IsRed(x) (x==2)
 #define IsSameSide(x,y) ((IsBlack(x)&&IsBlack(y))||(IsRed(x)&&IsRed(y)))
 
+#define MAX_INT 0x7fffffff
+#define MIN_INT 0x80000000
+
+#define MAX_DOUBLE 100000.0
+#define MIN_DOUBLE (-MAX_DOUBLE)
+
+//#define USE_INT_AS_BOARD_VALUE
+
+#ifdef USE_INT_AS_BOARD_VALUE
+	typedef int BV_TYPE;
+	#define MAX_VALUE (MAX_INT)
+	#define MIN_VALUE (MIN_INT)
+#else
+	typedef double BV_TYPE;
+	#define MAX_VALUE (MAX_DOUBLE)
+	#define MIN_VALUE (MIN_DOUBLE)
+#endif
+
+typedef unsigned long long int ID_TYPE;
+
 const int arcLoop[2][24][2] = {
 	{   //ÄÚ»¡
 		{ 1,0 },{ 1,1 },{ 1,2 },{ 1,3 },{ 1,4 },{ 1,5 },
@@ -46,7 +66,7 @@ typedef struct _chessmanposition
 
 typedef struct _chessmove
 {
-	short Side;
+	BYTE Side;
 	CHESSNAMPOS From;
 	CHESSNAMPOS To;
 	int Score;
@@ -56,11 +76,11 @@ typedef struct _chessmove
 	}
 
 	struct _chessmove() {};
-	struct _chessmove(BYTE xf, BYTE yf, BYTE xt, BYTE yt, short side): From(xf,yf),To(xt,yt),Side(side){
+	struct _chessmove(BYTE xf, BYTE yf, BYTE xt, BYTE yt, BYTE side): From(xf,yf),To(xt,yt),Side(side){
 		Score = 0;
 		isMove = true;
 	};
-	struct _chessmove(BYTE xf, BYTE yf, BYTE xt, BYTE yt, short side,bool _isMove) :
+	struct _chessmove(BYTE xf, BYTE yf, BYTE xt, BYTE yt, BYTE side,bool _isMove) :
 		From(xf, yf), To(xt, yt), Side(side),isMove(_isMove) {
 		Score = 0;
 	};

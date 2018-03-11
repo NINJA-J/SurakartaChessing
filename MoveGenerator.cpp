@@ -187,100 +187,41 @@ BOOL CMoveGenerator::IsValidMove(BYTE position[6][6], int nFromX, int nFromY, in
 	}
 }
 
-/*
-int CMoveGenerator::CreatePossibleMove(BYTE position[6][6],int nPly,int nSide) {//nside代表产生哪一方的走法	    
-	m_nMoveCount = 0;
-	memcpy(this->position, position, sizeof(BYTE[6][6]));
-	for (int arc = INNER; arc <= OUTER; arc++) {
-		for (int i = 0; i < 24; i++) {
-			if (*loop[arc][i]) {
-				checkStart[arc] = i;//sssssss
-				break;
-			}
-		}
-	}
-
-	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
-	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
-		if (checkStart[arc] != -1) { //判断当前弧上有点
-			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
-				s = checkStart[arc];
-				e = ( s + dir ) % 24;
-				colorS = *loop[arc][s];//保留起点颜色，起点置空，和旧函数思路一样
-				*loop[arc][s] = 0;
-				for ( int i = 0; i < 24; i++, e = (e + dir) % 24) {
-					colorE = *loop[arc][e];
-					if (*loop[arc][e]) {
-						if (colorS + nSide == 2 && colorE - nSide == 1 && s / 6 != e / 6) {
-							AddMove(arcLoop[arc][s][X],
-								arcLoop[arc][s][Y],
-								arcLoop[arc][e][X],
-								arcLoop[arc][e][Y],
-								nPly);
-						}
-						*loop[arc][s] = colorS;//恢复起点颜色，继续搜索
-						s = e; //终点置为新起点
-						colorS = *loop[arc][s];//保留起点颜色，起点置空，和旧函数思路一样
-						*loop[arc][s] = 0;
-					}
-				}
-				if (!*loop[arc][s]) *loop[arc][s] = colorS;
-			}
-		}
-	}
-
-	//生成走子着法
-	for (int i = 0; i < 6; i++) {
-		for (int j = 0; j < 6; j++) {
-			if (position[i][j] == 2 - nSide) {
-				for (int x = -1; x <= 1; x++) {
-					for (int y = -1; y <= 1; y++) {
-						if (0 <= x + i && x + i < 6 &&
-							0 <= y + j && y + j < 6 &&
-							position[x + i][y + j] == 0) {
-							AddMove(i, j, x + i, y + j, nPly);
-
-						}
-					}
-				}
-			}
-		}
-	}
-	return m_nMoveCount;
-}
-*/
-
 int CMoveGenerator::createPossibleMoves(ChessBoard &board,CHESSMOVE * list, int maxSize) {
 	if (list == NULL || maxSize == 0) return 0;
 	listOutput = list;
 	listMaxSpace = maxSize;
 	moveCount = 0;
-	int nSide = board.getChessTurn();
+	bool playSide = board.getTurn();
+	BYTE playColor = board.getTurn() == B_PLAYING ? BLACK : RED;
 
 	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
 	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
 		if (board.getLoopStart(arc) != -1) { //判断当前弧上有点
 			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
+
 				s = board.getLoopStart(arc);
 				e = (s + dir) % 24;
-				colorS = board.pArc(arc,s);//保留起点颜色，起点置空，和旧函数思路一样
-				board.pArc(arc, s) = 0;
+
+				colorS = board(arc,s);//保留起点颜色，起点置空，和旧函数思路一样
+				board(arc, s) = 0;
+
 				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
-					colorE = board.pArc(arc, e);// *loop[arc][e];
+					colorE = board(arc, e);// *loop[arc][e];
 					if (colorE) {
-						if (colorS + nSide == 2 && colorE - nSide == 1 && s / 6 != e / 6) {
+						if (colorS == playColor && colorE != playColor && s / 6 != e / 6) {
 							addMove(CHESSMOVE(
 								arcLoop[arc][s][PX], arcLoop[arc][s][PY],
 								arcLoop[arc][e][PX], arcLoop[arc][e][PY],
-								nSide, false));
+								playColor, false));
 						}
-						board.pArc(arc, s) = colorS;//恢复起点颜色，继续搜索
+						board(arc, s) = colorS;//恢复起点颜色，继续搜索
 						s = e; //终点置为新起点
-						colorS = board.pArc(arc, s);//保留起点颜色，起点置空，和旧函数思路一样
-						board.pArc(arc, s) = 0;
+						colorS = board(arc, s);//保留起点颜色，起点置空，和旧函数思路一样
+						board(arc, s) = 0;
 					}
 				}
-				if (!board.pArc(arc, s)) board.pArc(arc, s) = colorS;
+				if (!board(arc, s)) board(arc, s) = colorS;
 			}
 		}
 	}
@@ -288,14 +229,14 @@ int CMoveGenerator::createPossibleMoves(ChessBoard &board,CHESSMOVE * list, int 
 	//生成走子着法
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
-			if (board[i][j] == 2 - nSide) {
+			if (board[i][j] == playColor) {
 				for (int x = -1; x <= 1; x++) {
 					for (int y = -1; y <= 1; y++) {
 						if (0 <= x + i && x + i < 6 &&
 							0 <= y + j && y + j < 6 &&
+							(x || y) &&
 							board[x + i][y + j] == 0) {
-							addMove(CHESSMOVE(i, j, x + i, y + j, nSide, true));
-
+							addMove(CHESSMOVE(i, j, x + i, y + j, playColor, true));
 						}
 					}
 				}
@@ -310,75 +251,3 @@ inline void CMoveGenerator::addMove(CHESSMOVE move) {
 		listOutput[moveCount++] = move;
 	}
 }
-
-/*
-int CMoveGenerator::AnalysisAttackInfo(BYTE position[6][6],int &bNum,int &bPos, int & bAttack, int & bProtect, int & bMove, int &rNum,int &rPos, int & rAttack, int & rProtect, int & rMove)
-{
-	memcpy(this->position, position, sizeof(BYTE[6][6]));
-	bAttack = bProtect = rAttack = rProtect = bMove = rMove = 0;
-	bNum = rNum = bPos = rPos = 0;
-	static const int posScore[6][6] = {
-		{ 5,20,20,20,20,5 },
-		{ 20,30,50,50,30,20 },
-		{ 20,50,40,40,50,50 },
-		{ 20,50,40,40,50,20 },
-		{ 20,30,50,50,30,20 },
-		{ 5,20,20,20,20,5 }
-	};
-	for (int arc = INNER; arc <= OUTER; arc++) {
-		for (int i = 0; i < 24; i++) {
-			if (*loop[arc][i]) {
-				checkStart[arc] = i;//sssssss
-				break;
-			}
-		}
-	}
-
-	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
-	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
-		if (checkStart[arc] != -1) { //判断当前弧上有点
-			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
-				s = checkStart[arc];
-				e = (s + dir) % 24;
-
-				colorS = *loop[arc][s];//保留起点颜色，起点置空，和旧函数思路一样
-				*loop[arc][s] = 0;
-
-				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
-					colorE = *loop[arc][e];
-					if (*loop[arc][e]) {
-						if (s / 6 != e / 6)
-							colorS == colorE ?
-							(colorS == BLACK ? bAttack++ : rAttack++) :
-							(colorS == BLACK ? bProtect++ : rProtect++);
-
-						*loop[arc][s] = colorS;//恢复起点颜色，继续搜索
-						s = e; //终点置为新起点
-						colorS = *loop[arc][s];//保留起点颜色，起点置空，和旧函数思路一样
-						*loop[arc][s] = 0;
-					}
-				}
-				if (!*loop[arc][s]) *loop[arc][s] = colorS;
-			}
-		}
-	}
-
-	//生成走子着法
-	for (int i = 0; i < 6; i++) {
-		for (int j = 0; j < 6; j++) {
-			if (position[i][j] ) {
-				position[i][j] == BLACK ? bNum++,bPos+=posScore[i][j] : rNum++,rPos+=posScore[i][j];
-				for (int x = -1; x <= 1; x++) {
-					for (int y = -1; y <= 1; y++) {
-						if (0 <= x + i && x + i < 6 &&
-							0 <= y + j && y + j < 6 &&
-							position[x + i][y + j] == 0) {
-							position[x + i][y + j] == BLACK ? bMove++ : rMove++;
-						}
-					}
-				}
-			}
-		}
-	}
-	return 0;
-}*/

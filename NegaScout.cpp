@@ -5,12 +5,14 @@
 #include "stdafx.h"
 #include "Surakarta.h"
 #include "NegaScout.h"
+#include "Define.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 ///////////////////// /////////////////////////////////////////////////
@@ -21,7 +23,7 @@ CNegaScout::CNegaScout(){
 CNegaScout::~CNegaScout() {}
 
 CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6],bool m_isPlayerBlack) {
-	double score;
+	BV_TYPE score;
 
 	chessBoard.setChessPosition(position, m_isPlayerBlack);
 	isBlackPlay = m_isPlayerBlack;
@@ -30,6 +32,9 @@ CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6],bool m_isPlayerBlack) 
 	//NegaScout_TT_HH(m_nMaxDepth,0,m_isPlayerBlack);
 	//NegaScout_ABTree(m_nMaxDepth, m_isPlayerBlack);
 	score = negaScoutMinWin(m_nMaxDepth, m_isPlayerBlack);
+
+	chessBoard.move(bestMove);
+	chessBoard.getPosition(position);
 
 	CString temp;
 	temp.Format(
@@ -82,13 +87,8 @@ double CNegaScout::NegaScout_TT_HH(int depth,int num,bool isBlackPlay)
 	return best;
 }
 
-double CNegaScout::NegaScout_ABTree(int depth, bool isBlackPlay, int alpha, int beta) {
+double CNegaScout::NegaScout_ABTree(int depth, bool isBlackPlay, BV_TYPE alpha, BV_TYPE beta) {
 	CHESSMOVE moveList[200];
-
-	if (depth == m_nMaxDepth) { //在第一层时自动设定alpha和beta，因为这一层肯定是maxint和minint，减少searchagoodmove里的代码量
-		alpha = MIN_INT;
-		beta = MAX_INT;
-	}
 	//0 floor is max floor
 	//depth of 0 floor = m_nMaxDepth
 	bool isMax = (m_nMaxDepth - depth) % 2 == 0;//判断当前层是不是max层
@@ -98,7 +98,7 @@ double CNegaScout::NegaScout_ABTree(int depth, bool isBlackPlay, int alpha, int 
 												//depth of 0   floor = m_nMaxDepth
 												//depth of cur floor = m_nMaxDepth - depth
 	int side = (m_nMaxDepth - depth + isBlackPlay) % 2;//当前层谁走子
-	int best = isMax ? MIN_INT : MAX_INT;//初始化搜索的估值的最值
+	BV_TYPE best = isMax ? MIN_VALUE : MAX_VALUE;//初始化搜索的估值的最值
 
 	if (int i = isGameOver()) return i;//终局
 	if (depth <= 0) return m_pEval.evaluate(chessBoard, isBlackPlay);//叶结点
@@ -115,49 +115,33 @@ double CNegaScout::NegaScout_ABTree(int depth, bool isBlackPlay, int alpha, int 
 		if (isMax) {
 			if (best < t) { //获得更大的估值
 				alpha = best = t; //更新最值和alpha
-				
-				if (depth == m_nMaxDepth){//只有在第一层更新
-					bestMove = moveList[i];
-				}
-					
+				if (depth == m_nMaxDepth) bestMove = moveList[i];
 			}
 			if (best >= beta) return best; //无法使上层变小，剪枝
 		}
 		else {
-			if (best > t) {
-				beta = best = t;
-				if (depth == m_nMaxDepth)
-					bestMove = moveList[i];
-			}
+			if (best > t) beta = best = t;
 			if (best <= alpha) return best;
 		}
 	}
 	return best;//返回最值
 }
 
-double CNegaScout::negaScoutMinWin(int depth, bool isBlackPlay, int alpha, int beta)
-{
+double CNegaScout::negaScoutMinWin(int depth, bool isBlackPlay, BV_TYPE alpha, BV_TYPE beta) {
 	CHESSMOVE moveList[200];
-	//0 floor is max floor
-	//depth of 0 floor = m_nMaxDepth
-	bool isMax = (m_nMaxDepth - depth) % 2 == 0;//判断当前层是不是max层
-												//cur floor is black playing -- side = 1
-												//cur floor is red   playing -- side = 0
-												//0   floor is black playing -- m_Type = 1
-												//depth of 0   floor = m_nMaxDepth
-												//depth of cur floor = m_nMaxDepth - depth
+	bool isMax = (m_nMaxDepth - depth) % 2 == 0;
 	int side = (m_nMaxDepth - depth + isBlackPlay) % 2;//当前层谁走子
-	int best = isMax ? MIN_INT : MAX_INT;//初始化搜索的估值的最值
+
+	BV_TYPE best = isMax ? MIN_VALUE : MAX_VALUE;//初始化搜索的估值的最值
 
 	if (int i = isGameOver()) return i;//终局
 	if (depth <= 0) return m_pEval.evaluate(chessBoard, isBlackPlay);//叶结点
 	if (m_pEval.getBoardValue(chessBoard.getId(), depth, best)) return best;
 
 	int count = m_pMG.createPossibleMoves(chessBoard,moveList, 200);
-
 	for (int i = 0; i < count; i++) {
 		chessBoard.move(moveList[i]);
-		int t = isMax ?
+		BV_TYPE t = isMax ?
 			negaScoutMinWin(depth - 1, isBlackPlay, best, MAX_INT) :
 			negaScoutMinWin(depth - 1, isBlackPlay, MIN_INT, best);
 		chessBoard.unMove();
@@ -168,12 +152,8 @@ double CNegaScout::negaScoutMinWin(int depth, bool isBlackPlay, int alpha, int b
 				if (depth == m_nMaxDepth) bestMove = moveList[i];
 			}
 			if (best >= beta) return best; //无法使上层变小，剪枝
-		}
-		else {
-			if (best > t) {
-				beta = best = t;
-				if (depth == m_nMaxDepth) bestMove = moveList[i];
-			}
+		} else {
+			if (best > t) beta = best = t;
 			if (best <= alpha) return best;
 		}
 	}

@@ -38,27 +38,21 @@ void ChessBoard::initIdList() {
 
 ChessBoard::ChessBoard(bool isBlackFirst) {
 	setChessPosition(defaultStartBoard);
-	setChessTurn(isBlackFirst);
+	setTurn(isBlackFirst);
 
-	for (int i = 0; i < 24; i++) {
-		for (int arc = INNER; arc <= OUTER; arc++) {
-			loop[arc][i] = &(this->position[arcLoop[arc][i][PX]][arcLoop[arc][i][PY]]);
-		}
-	}
-	loopStart[INNER] = loopStart[OUTER] = -1;
+	attachLoopList();
+	chkLoopStart();
+
 	moveList = NULL;
 }
 
 ChessBoard::ChessBoard(BYTE position[6][6], bool isBlackFirst) {
 	setChessPosition(position);
-	setChessTurn(isBlackFirst);
+	setTurn(isBlackFirst);
 
-	for (int i = 0; i < 24; i++) {
-		for (int arc = INNER; arc <= OUTER; arc++) {
-			loop[arc][i] = &(this->position[arcLoop[arc][i][PX]][arcLoop[arc][i][PY]]);
-		}
-	}
-	loopStart[INNER] = loopStart[OUTER] = -1;
+	attachLoopList();
+	chkLoopStart();
+
 	moveList = NULL;
 }
 
@@ -76,18 +70,38 @@ bool ChessBoard::setChessPosition(const BYTE position[6][6], bool isBlackFirst) 
 	return true;
 }
 
-bool ChessBoard::setChessTurn(bool isBlackTurn) {
+bool ChessBoard::setTurn(bool isBlackTurn) {
 	if (moves.size() > 0)return false;
 	this->isBlackTurn = isBlackTurn;
 	return true;
 }
 
-int ChessBoard::getChessTurn() {
+bool ChessBoard::getTurn() {
 	return isBlackTurn;
 }
 
 int ChessBoard::getLoopStart(int arc) {
 	return loopStart[arc];
+}
+
+void ChessBoard::chkLoopStart() {
+	for (int arc = INNER; arc != OUTER; arc++) {
+		for (int index = 0; index < 24; index++) {
+			if (*loop[arc][index]) {
+				loopStart[arc] = index;
+				index = 24;
+				break;
+			}
+		}
+	}
+}
+
+void ChessBoard::attachLoopList() {
+	for (int i = 0; i < 24; i++) {
+		for (int arc = INNER; arc <= OUTER; arc++) {
+			loop[arc][i] = &(this->position[arcLoop[arc][i][PX]][arcLoop[arc][i][PY]]);
+		}
+	}
 }
 
 void ChessBoard::move(int fX, int fY, int tX, int tY) {
@@ -114,6 +128,8 @@ void ChessBoard::move(CHESSMOVE move) {
 
 	isBlackTurn = !isBlackTurn;
 	moves.push(move);
+
+	chkLoopStart();
 }
 
 void ChessBoard::cMove(CHESSMOVE move)
@@ -139,7 +155,7 @@ void ChessBoard::unMove() {
 	CHESSMOVE move = moves.top();
 	moves.pop();
 
-	BYTE sColor = move.Side ? BLACK : RED;
+	BYTE sColor = move.Side;
 	BYTE eColor = move.isMove ? 0 : 3-sColor;
 
 	rawId -= idList[move.To.x][move.To.y][sColor];
@@ -153,6 +169,8 @@ void ChessBoard::unMove() {
 	position[move.From.x][move.From.y] = sColor;
 
 	isBlackTurn = !isBlackTurn;
+
+	chkLoopStart();
 }
 
 ID_TYPE ChessBoard::getId() {
@@ -163,7 +181,7 @@ ID_TYPE ChessBoard::getIdRaw() {
 	return rawId;
 }
 
-int ChessBoard::finishedMoves() {
+int ChessBoard::getMoves() {
 	return moves.size();
 }
 
@@ -181,21 +199,21 @@ int ChessBoard::getSearchMoves() {
 	return moves.size();
 }
 
-bool ChessBoard::getTurn() {
-	return isBlackTurn;
-}
-
 void ChessBoard::getPosition(BYTE pos[][6]) {
-	memcmp(pos, position, sizeof(BYTE) * 36);
+	memcpy(pos, position, sizeof(BYTE) * 36);
 }
 
 BYTE * ChessBoard::operator[](int x) {
 	return position[x];
 }
 
-BYTE & ChessBoard::operator[](CHESSNAMPOS pos)
-{
+BYTE & ChessBoard::operator[](CHESSNAMPOS pos) {
 	return position[pos.x][pos.y];
+}
+
+BYTE& ChessBoard::operator()(int arc, int index) {
+	return *loop[arc][index];
+	// TODO: 在此处插入 return 语句
 }
 
 BYTE& ChessBoard::pInner(int index){

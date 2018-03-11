@@ -12,6 +12,7 @@
 #include "MoveGenerator.h"
 #include "ChessBoard.h"
 #include <unordered_map>
+#include "Define.h"
 
 typedef struct valueVector {
 	int pValue;
@@ -86,15 +87,15 @@ typedef struct weightVector {
 	}
 }WeightVector;
 
-double operator*(ValueVector value, WeightVector weight);
+BV_TYPE operator*(ValueVector value, WeightVector weight);
 
-double operator*(WeightVector weight, ValueVector value);
+BV_TYPE operator*(WeightVector weight, ValueVector value);
 
 class valUnion {
 public:
 	int depth;
-	int value;
-	valUnion(int d, int v) :depth(d), value(v) {};
+	BV_TYPE value;
+	valUnion(int d, BV_TYPE v) :depth(d), value(v) {};
 	valUnion() {};
 };
 
@@ -103,14 +104,14 @@ public:
 	CEvaluation();
 	virtual ~CEvaluation();
 
-	virtual double evaluate(ChessBoard &board, bool isBlackTurn);//估值函数，对传入的棋盘打分，bIsBlackTurn代表轮到谁走棋
+	virtual BV_TYPE evaluate(ChessBoard &board, bool isBlackTurn);//估值函数，对传入的棋盘打分，bIsBlackTurn代表轮到谁走棋
 	virtual ValueVector analysis(ChessBoard &board, bool isBlackTurn);
 
 	//void GetAttackInfo(BYTE position[6][6]);
 	int GetArcValue(BYTE position[6][6], BOOL bIsBlackTurn);//用于计算占弧价值
 
-	bool getBoardValue(ID_TYPE id, int depth, int &value);
-	bool addBoardValue(ID_TYPE id, int depth, int value);
+	bool getBoardValue(ID_TYPE id, int depth, BV_TYPE &value);
+	bool addBoardValue(ID_TYPE id, int depth, BV_TYPE value);
 	int getArcValue(ChessBoard &board, bool isBlack);
 
 private:

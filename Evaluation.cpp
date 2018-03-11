@@ -16,7 +16,7 @@ static char THIS_FILE[]=__FILE__;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-double operator*(WeightVector weight, ValueVector value) {
+BV_TYPE operator*(WeightVector weight, ValueVector value) {
 	double sum = 0;
 	sum += value.pValue * weight.pValue;
 	sum += value.aValue * weight.aValue;
@@ -27,7 +27,7 @@ double operator*(WeightVector weight, ValueVector value) {
 	return sum;
 }
 
-double operator*(ValueVector value, WeightVector weight) {
+BV_TYPE operator*(ValueVector value, WeightVector weight) {
 	double sum = 0;
 	sum += value.pValue * weight.pValue;
 	sum += value.aValue * weight.aValue;
@@ -67,7 +67,7 @@ CEvaluation::CEvaluation(){}
 
 CEvaluation::~CEvaluation() {}
 
-double CEvaluation::evaluate(ChessBoard &board, bool isBlackTurn) {
+BV_TYPE CEvaluation::evaluate(ChessBoard &board, bool isBlackTurn) {
 
 	//你需要在这个函数里添加有如下功能的代码：
 	//1.可以知道棋盘上敌方和我方棋子的数量
@@ -82,7 +82,7 @@ double CEvaluation::evaluate(ChessBoard &board, bool isBlackTurn) {
 		1, //mWeight	- 走子权值
 		1, //posWeight	- 位置权值
 		6, //numWeight	- 子力权值
-		1  //arcWeight	- 占弧权值
+		5  //arcWeight	- 占弧权值
 	);
 	
 	 return  weights * analysis(board,isBlackTurn);
@@ -91,42 +91,32 @@ double CEvaluation::evaluate(ChessBoard &board, bool isBlackTurn) {
 ValueVector CEvaluation::analysis(ChessBoard &board,bool isBlackTurn)
 {
 	ValueVector rVal,bVal;
-	BYTE loopStart[2] = { -1,-1 };
-	
-	for (int arc = INNER; arc <= OUTER; arc++) {
-		for (int i = 0; i < 24; i++) {
-			if (board.pArc(arc,i)) {
-				loopStart[arc] = i;//sssssss
-				break;
-			}
-		}
-	}
 
 	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
 	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
-		if (loopStart[arc] != -1) { //判断当前弧上有点
+		if (board.getLoopStart(arc) != -1) { //判断当前弧上有点
 			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
-				s = loopStart[arc];
+				s = board.getLoopStart(arc);
 				e = (s + dir) % 24;
 
-				colorS = board.pArc(arc,s);//保留起点颜色，起点置空，和旧函数思路一样
-				board.pArc(arc,s) = 0;
+				colorS = board(arc,s);//保留起点颜色，起点置空，和旧函数思路一样
+				board(arc,s) = 0;
 
 				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
-					colorE = board.pArc(arc,e);
-					if (board.pArc(arc, e)) {
+					colorE = board(arc,e);
+					if (board(arc, e)) {
 						if (s / 6 != e / 6)
-							colorS == colorE ?
+							colorS != colorE ?
 							(colorS == BLACK ? bVal.aValue++ : rVal.aValue++) :
 							(colorS == BLACK ? bVal.pValue++ : rVal.pValue++);
 
-						board.pArc(arc, s) = colorS;//恢复起点颜色，继续搜索
+						board(arc, s) = colorS;//恢复起点颜色，继续搜索
 						s = e; //终点置为新起点
-						colorS = board.pArc(arc, s);//保留起点颜色，起点置空，和旧函数思路一样
-						board.pArc(arc, s) = 0;
+						colorS = board(arc, s);//保留起点颜色，起点置空，和旧函数思路一样
+						board(arc, s) = 0;
 					}
 				}
-				if (!board.pArc(arc, s)) board.pArc(arc, s) = colorS;
+				if (!board(arc, s)) board(arc, s) = colorS;
 			}
 		}
 	}
@@ -143,7 +133,7 @@ ValueVector CEvaluation::analysis(ChessBoard &board,bool isBlackTurn)
 						if (0 <= x + i && x + i < 6 &&
 							0 <= y + j && y + j < 6 &&
 							board[x + i][y + j] == 0) {
-							board[x + i][y + j] == BLACK ? bVal.mValue++ : rVal.mValue++;
+							board[i][j] == BLACK ? bVal.mValue++ : rVal.mValue++;
 						}
 					}
 				}
@@ -224,7 +214,7 @@ int CEvaluation::GetArcValue(BYTE position[6][6], BOOL IsBlackturn)
 	}
 }
 
-bool CEvaluation::getBoardValue(ID_TYPE id, int depth, int & value) {
+bool CEvaluation::getBoardValue(ID_TYPE id, int depth, BV_TYPE & value) {
 	unordered_map<ID_TYPE, valUnion>::const_iterator iter = boardValue.find(id);
 	if (iter == boardValue.end()) return false;
 	if (iter->second.depth < depth)return false;
@@ -232,7 +222,7 @@ bool CEvaluation::getBoardValue(ID_TYPE id, int depth, int & value) {
 	return true;
 }
 
-bool CEvaluation::addBoardValue(ID_TYPE id, int depth, int value) {
+bool CEvaluation::addBoardValue(ID_TYPE id, int depth, BV_TYPE value) {
 	unordered_map<ID_TYPE, valUnion>::iterator iter = boardValue.find(id);
 	if (iter == boardValue.end())
 		boardValue.insert({ id,valUnion(depth,value) });
@@ -291,10 +281,10 @@ int CEvaluation::getArcValue(ChessBoard &board,bool isBlack) {
 		}
 	}
 	if (isBlack) {
-		return BArcNum * 5 + NoArcNum * 5;
+		return BArcNum + NoArcNum;
 	}
 	else {
-		return RArcNum * 5 + NoArcNum * 5;
+		return RArcNum + NoArcNum;
 	}
 }
 

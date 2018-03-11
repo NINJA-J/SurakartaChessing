@@ -4,16 +4,11 @@
 #include "Define.h"
 #include <stack>
 
-typedef unsigned long long int ID_TYPE;
-
 #define PX 0
 #define PY 1
 
 #define INNER 0
 #define OUTER 1
-
-#define MAX_INT 0x7fffffff
-#define MIN_INT 0x80000000
 
 #define SIG_BLACK (((ID_TYPE)1)<<63)
 #define SIG_RED ((ID_TYPE)0)
@@ -45,26 +40,28 @@ public:
 	ChessBoard(BYTE position[6][6], bool isBlackFirst = true);
 	bool setChessPosition(const BYTE position[6][6], bool isBlackFirst = true);
 
-	bool setChessTurn(bool isBlackTurn);
-	int getChessTurn();
+	bool setTurn(bool isBlackTurn);
+	bool getTurn();
 
 	void move(int fX, int fY, int tX, int tY);
 	void move(CHESSMOVE move);
 	void cMove(CHESSMOVE move);
 	void unMove();
-	int finishedMoves();
+	int getMoves();
 	int isGameOver();//在搜索中用到，表示某一方的搜索树的终局
 
 	int getLoopStart(int arc);
+	void chkLoopStart();
+	void attachLoopList();
 	ID_TYPE getId();
 	inline ID_TYPE getIdRaw();
 	int getNums(bool isBlack);
 	int getSearchMoves();
-	bool getTurn();
 	void getPosition(BYTE pos[][6]);
 
 	BYTE* operator[](int x);
 	BYTE& operator[](CHESSNAMPOS pos);
+	BYTE& operator()(int arc, int index);
 	inline BYTE& pInner(int index);
 	inline BYTE& pOuter(int index);
 	BYTE& pArc(int arc, int index);

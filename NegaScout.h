@@ -21,8 +21,8 @@ public:
 	virtual CHESSMOVE SearchAGoodMove(BYTE position[6][6],bool m_isPlayerBlack);
 protected:
 	double NegaScout_TT_HH(int depth,int num,bool isBlackPlay);
-	double NegaScout_ABTree(int depth, bool isBlackPlay, int alpha = 0, int beta = 0);
-	double negaScoutMinWin(int depth, bool isBlackPlay, int alpha = MIN_INT, int beta = MAX_INT);
+	double NegaScout_ABTree(int depth, bool isBlackPlay, BV_TYPE alpha = MIN_VALUE, BV_TYPE beta = MAX_VALUE);
+	double negaScoutMinWin(int depth, bool isBlackPlay, BV_TYPE alpha = MIN_VALUE, BV_TYPE beta = MAX_VALUE);
     CHESSMOVE m_bestMove;
 };
 
