@@ -23,8 +23,11 @@ public:
 	static BOOL IsValidMove(BYTE position[6][6],int nFromX,int nFromY,int nToX,int nToY);
 
 	//产生给定棋盘上的所有合法的走法
+	bool initOutputList(CHESSMOVE *list, int maxSize);
 	int createPossibleMoves(ChessBoard &board, CHESSMOVE* list, int maxSize );
+	int createPossibleMoveOld(BYTE position[6][6], int nSide, CHESSMOVE *list, int maxSize);
 	inline void addMove(CHESSMOVE move);
+	bool cmpMoveLists(CHESSMOVE* list1, CHESSMOVE* list2, int size1, int size2);
 //	int AnalysisAttackInfo(BYTE position[6][6],int &bNum,int &bPos, int &bAttack, int &bProtect, int &bMove,int &rNum,int &rPos, int &rAttack, int &rProtect, int &rMove);
 private: 
 	static const int arcLoop[2][24][2];//64-75的定义添加到cpp文件里

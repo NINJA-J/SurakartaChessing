@@ -7,6 +7,7 @@
 
 #include "MoveGenerator.h"
 #include "math.h"
+#include <thread>
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -187,11 +188,16 @@ BOOL CMoveGenerator::IsValidMove(BYTE position[6][6], int nFromX, int nFromY, in
 	}
 }
 
-int CMoveGenerator::createPossibleMoves(ChessBoard &board,CHESSMOVE * list, int maxSize) {
-	if (list == NULL || maxSize == 0) return 0;
+bool CMoveGenerator::initOutputList(CHESSMOVE * list, int maxSize) {
+	if (list == NULL || maxSize == 0) return false;
 	listOutput = list;
 	listMaxSpace = maxSize;
 	moveCount = 0;
+	return true;
+}
+
+int CMoveGenerator::createPossibleMoves(ChessBoard &board,CHESSMOVE * list, int maxSize) {
+	if (!initOutputList(list, maxSize)) return 0;
 	bool playSide = board.getTurn();
 	BYTE playColor = board.getTurn() == B_PLAYING ? BLACK : RED;
 
@@ -246,8 +252,40 @@ int CMoveGenerator::createPossibleMoves(ChessBoard &board,CHESSMOVE * list, int 
 	return moveCount;
 }
 
+int CMoveGenerator::createPossibleMoveOld(BYTE position[6][6], int nSide, CHESSMOVE * list, int maxSize) {
+	if (!initOutputList(list, maxSize))return 0;
+	for (int x = 0; x < 6; x++) {
+		for (int y = 0; y < 6; y++) {
+			for (int i = 0; i < 6; i++) {
+				for (int j = 0; j < 6; j++) {
+					if (position[x][y] == nSide&&IsValidMove(position, x, y, i, j)) {
+						addMove(CHESSMOVE(x, y, i, j, nSide, position[i][j]));
+					}
+				}
+			}
+		}
+	}
+	return moveCount;
+}
+
 inline void CMoveGenerator::addMove(CHESSMOVE move) {
 	if (listOutput&&moveCount < listMaxSpace) {
 		listOutput[moveCount++] = move;
 	}
+}
+
+bool CMoveGenerator::cmpMoveLists(CHESSMOVE * list1, CHESSMOVE * list2, int size1, int size2) {
+	if (size1 != size2)return false;
+	for (int i = 0; i < size1; i++) {
+		bool found = false;
+		for (int j = 0; j < size2; j++) {
+			if (list1[i] == list2[j]) {
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			return false;
+	}
+	return true;
 }

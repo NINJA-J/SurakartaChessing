@@ -39,6 +39,7 @@ public:
 	ChessBoard(bool isBlackFirst = true);
 	ChessBoard(BYTE position[6][6], bool isBlackFirst = true);
 	bool setChessPosition(const BYTE position[6][6], bool isBlackFirst = true);
+	string printBoard(char noChess = '-', char black = '*', char red = 'O');
 
 	bool setTurn(bool isBlackTurn);
 	bool getTurn();

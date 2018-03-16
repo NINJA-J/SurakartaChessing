@@ -1,5 +1,8 @@
 #include "stdafx.h"
 #include "ChessBoard.h"
+#include <string>
+
+using namespace std;
 
 const BYTE ChessBoard::defaultStartBoard[6][6] = {
 	{1,1,1,1,1,1},
@@ -68,6 +71,22 @@ bool ChessBoard::setChessPosition(const BYTE position[6][6], bool isBlackFirst) 
 	isBlackTurn = isBlackFirst;
 	while (moves.size()) moves.pop();
 	return true;
+}
+
+string ChessBoard::printBoard(char noChess, char black, char red) {
+	string str;
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 6; j++) {
+			switch (position[i][j]) {
+			case NOCHESS:	str += noChess + ' '; break;
+			case BLACK:		str += black + ' '; break;
+			case RED:		str += red + ' '; break;
+			default:		str += ". ";
+			}
+		}
+		str += '\n';
+	}
+	return str;
 }
 
 bool ChessBoard::setTurn(bool isBlackTurn) {
