@@ -106,6 +106,7 @@ public:
 
 	virtual BV_TYPE evaluate(ChessBoard &board, bool isBlackTurn);//估值函数，对传入的棋盘打分，bIsBlackTurn代表轮到谁走棋
 	virtual ValueVector analysis(ChessBoard &board, bool isBlackTurn);
+	virtual ValueVector analysisOld(ChessBoard &board, bool isBlackTurn);
 
 	//void GetAttackInfo(BYTE position[6][6]);
 	int GetArcValue(BYTE position[6][6], BOOL bIsBlackTurn);//用于计算占弧价值

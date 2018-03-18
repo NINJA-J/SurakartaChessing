@@ -201,33 +201,35 @@ int CMoveGenerator::createPossibleMoves(ChessBoard &board,CHESSMOVE * list, int 
 	bool playSide = board.getTurn();
 	BYTE playColor = board.getTurn() == B_PLAYING ? BLACK : RED;
 
-	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
+	int s, e;//起点下标，终点下标，起点颜色，终点颜色
 	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
-		if (board.getLoopStart(arc) != -1) { //判断当前弧上有点
+		int sIndex = board.getLoopStart(arc, playColor);
+		s = e = -1;
+		if (sIndex != -1) { //判断当前弧上有点
 			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
 
-				s = board.getLoopStart(arc);
-				e = (s + dir) % 24;
+				s = sIndex;
+				do {
+					int colorTemp = board(arc, s);
+					board(arc, s) = 0;
 
-				colorS = board(arc,s);//保留起点颜色，起点置空，和旧函数思路一样
-				board(arc, s) = 0;
+					e = (s + dir) % 24;
+					while (e != sIndex && !board(arc, e)) e = (e + dir) % 24;
 
-				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
-					colorE = board(arc, e);// *loop[arc][e];
-					if (colorE) {
-						if (colorS == playColor && colorE != playColor && s / 6 != e / 6) {
+					board(arc, s) = colorTemp;
+
+					if (e != sIndex) {
+						if (board(arc, s) == playColor&&board(arc, e) != playColor&&s / 6 != e / 6) {
 							addMove(CHESSMOVE(
 								arcLoop[arc][s][PX], arcLoop[arc][s][PY],
 								arcLoop[arc][e][PX], arcLoop[arc][e][PY],
 								playColor, false));
 						}
-						board(arc, s) = colorS;//恢复起点颜色，继续搜索
-						s = e; //终点置为新起点
-						colorS = board(arc, s);//保留起点颜色，起点置空，和旧函数思路一样
-						board(arc, s) = 0;
-					}
-				}
-				if (!board(arc, s)) board(arc, s) = colorS;
+					} else
+						break;
+					s = e;
+
+				} while (s != sIndex);
 			}
 		}
 	}
@@ -258,8 +260,8 @@ int CMoveGenerator::createPossibleMoveOld(BYTE position[6][6], int nSide, CHESSM
 		for (int y = 0; y < 6; y++) {
 			for (int i = 0; i < 6; i++) {
 				for (int j = 0; j < 6; j++) {
-					if (position[x][y] == nSide&&IsValidMove(position, x, y, i, j)) {
-						addMove(CHESSMOVE(x, y, i, j, nSide, position[i][j]));
+					if (position[x][y] == 2 - nSide&&IsValidMove(position, x, y, i, j)) {
+						addMove(CHESSMOVE(x, y, i, j, nSide, position[i][j] == 0));
 					}
 				}
 			}

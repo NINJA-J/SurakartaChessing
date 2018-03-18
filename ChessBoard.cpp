@@ -13,18 +13,6 @@ const BYTE ChessBoard::defaultStartBoard[6][6] = {
 	{2,2,2,2,2,2}
 };
 
-int ChessBoard::addMove(int nFromX, int nToX, int nFromY, int nToY) {
-	if (moveList == NULL) return -1;
-
-	(*moveList)[moveCount].From.x = nFromX;
-	(*moveList)[moveCount].From.y = nFromY;
-	(*moveList)[moveCount].To.x = nToX;
-	(*moveList)[moveCount].To.y = nToY;
-
-	moveCount++;
-	return moveCount;
-}
-
 void ChessBoard::initIdList() {
 	long long temp = 1;
 	rawId = 0;
@@ -45,8 +33,7 @@ ChessBoard::ChessBoard(bool isBlackFirst) {
 
 	attachLoopList();
 	chkLoopStart();
-
-	moveList = NULL;
+	initIdList();
 }
 
 ChessBoard::ChessBoard(BYTE position[6][6], bool isBlackFirst) {
@@ -55,8 +42,7 @@ ChessBoard::ChessBoard(BYTE position[6][6], bool isBlackFirst) {
 
 	attachLoopList();
 	chkLoopStart();
-
-	moveList = NULL;
+	initIdList();
 }
 
 bool ChessBoard::setChessPosition(const BYTE position[6][6], bool isBlackFirst) {
@@ -70,23 +56,27 @@ bool ChessBoard::setChessPosition(const BYTE position[6][6], bool isBlackFirst) 
 	}
 	isBlackTurn = isBlackFirst;
 	while (moves.size()) moves.pop();
+
+	attachLoopList();
+	chkLoopStart();
+
 	return true;
 }
 
-string ChessBoard::printBoard(char noChess, char black, char red) {
+void ChessBoard::printBoard(char* board, char noChess, char black, char red) {
 	string str;
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
 			switch (position[i][j]) {
-			case NOCHESS:	str += noChess + ' '; break;
-			case BLACK:		str += black + ' '; break;
-			case RED:		str += red + ' '; break;
+			case NOCHESS:	str += noChess + " "; break;
+			case BLACK:		str += black + " "; break;
+			case RED:		str += red + " "; break;
 			default:		str += ". ";
 			}
 		}
-		str += '\n';
+		str += "\n";
 	}
-	return str;
+	if (board) strcpy(board, str.c_str());
 }
 
 bool ChessBoard::setTurn(bool isBlackTurn) {
@@ -99,17 +89,25 @@ bool ChessBoard::getTurn() {
 	return isBlackTurn;
 }
 
-int ChessBoard::getLoopStart(int arc) {
-	return loopStart[arc];
+int ChessBoard::getLoopStart(int arc,int color) {
+	return loopStart[arc][color];
 }
 
-void ChessBoard::chkLoopStart() {
-	for (int arc = INNER; arc != OUTER; arc++) {
+inline void ChessBoard::chkLoopStart() {
+	loopStart[INNER][BLACK] = loopStart[INNER][RED] = loopStart[INNER][NOCHESS] = -1;
+	loopStart[OUTER][BLACK] = loopStart[OUTER][RED] = loopStart[OUTER][NOCHESS] = -1;
+	for (int arc = INNER; arc <= OUTER; arc++) {
+		int foundColor = 0;
 		for (int index = 0; index < 24; index++) {
 			if (*loop[arc][index]) {
-				loopStart[arc] = index;
-				index = 24;
-				break;
+				if (!foundColor) {
+					foundColor = *loop[arc][index];
+					loopStart[arc][NOCHESS] = loopStart[arc][foundColor] = index;
+				} else if (*loop[arc][index] == 3 - foundColor) {
+					loopStart[arc][3 - foundColor] = index;
+					loopStart[arc][NOCHESS] = min(loopStart[arc][BLACK], loopStart[arc][RED]);
+					break;
+				}
 			}
 		}
 	}
@@ -151,25 +149,6 @@ void ChessBoard::move(CHESSMOVE move) {
 	chkLoopStart();
 }
 
-void ChessBoard::cMove(CHESSMOVE move)
-{
-	BYTE sColor = position[move.From.x][move.From.y];
-	BYTE eColor = position[move.To.x][move.To.y];
-	if (eColor)
-		eColor == BLACK ? bNum-- : rNum--;
-
-	rawId -= idList[move.From.x][move.From.y][sColor];
-	rawId -= idList[move.To.x][move.To.y][eColor];
-	rawId += idList[move.To.x][move.To.y][sColor];
-
-	position[move.To.x][move.To.y] = position[move.From.x][move.From.y];
-	position[move.From.x][move.From.y] = NOCHESS;
-
-	isBlackTurn = !isBlackTurn;
-	cMoves.push(move);
-	while (moves.size())moves.pop();
-}
-
 void ChessBoard::unMove() {
 	CHESSMOVE move = moves.top();
 	moves.pop();
@@ -198,6 +177,17 @@ ID_TYPE ChessBoard::getId() {
 
 ID_TYPE ChessBoard::getIdRaw() {
 	return rawId;
+}
+
+ID_TYPE ChessBoard::getIdNormal() {
+	ID_TYPE id = 0;
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 6; j++) {
+			id += idList[i][j][BLACK];
+			id += idList[i][j][position[i][j]];
+		}
+	}
+	return id;
 }
 
 int ChessBoard::getMoves() {

@@ -107,7 +107,7 @@ double CNegaScout::NegaScout_ABTree(int depth, bool isBlackPlay, BV_TYPE alpha, 
 
 	for (int i = 0; i < count; i++) {
 		chessBoard.move(moveList[i]);//
-		int t = isMax ?
+		BV_TYPE t = isMax ?
 			NegaScout_ABTree(depth - 1, isBlackPlay, best, MAX_INT) :
 			NegaScout_ABTree(depth - 1, isBlackPlay, MIN_INT, best);
 		chessBoard.unMove();
