@@ -22,7 +22,7 @@ typedef struct valueVector {
 	int numValue;//红方，黑方棋子数量
 	int arcValue;//占弧值
 
-	valueVector(){
+	valueVector() {
 		pValue = aValue = mValue = posValue = numValue = arcValue = 0;
 	}
 
@@ -118,7 +118,7 @@ public:
 private:
 	ValueVector bValue, rValue;
 	WeightVector weights[5];
-	unordered_map<ID_TYPE,valUnion> boardValue;
+	unordered_map<ID_TYPE, valUnion> boardValue;
 
 	static const int posScore[3][6][6];
 };

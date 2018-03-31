@@ -11,7 +11,7 @@
 
 #ifdef _DEBUG
 #undef THIS_FILE
-static char THIS_FILE[]=__FILE__;
+static char THIS_FILE[] = __FILE__;
 #define new DEBUG_NEW
 #endif
 
@@ -196,7 +196,7 @@ bool CMoveGenerator::initOutputList(CHESSMOVE * list, int maxSize) {
 	return true;
 }
 
-int CMoveGenerator::createPossibleMoves(ChessBoard &board,CHESSMOVE * list, int maxSize) {
+int CMoveGenerator::createPossibleMoves(ChessBoard &board, CHESSMOVE * list, int maxSize) {
 	if (!initOutputList(list, maxSize)) return 0;
 	bool playSide = board.getTurn();
 	BYTE playColor = board.getTurn() == B_PLAYING ? BLACK : RED;
@@ -225,7 +225,8 @@ int CMoveGenerator::createPossibleMoves(ChessBoard &board,CHESSMOVE * list, int 
 								arcLoop[arc][e][PX], arcLoop[arc][e][PY],
 								playColor, false));
 						}
-					} else
+					}
+					else
 						break;
 					s = e;
 

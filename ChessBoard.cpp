@@ -1,16 +1,17 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "ChessBoard.h"
 #include <string>
+#include <iostream>
 
 using namespace std;
 
 const BYTE ChessBoard::defaultStartBoard[6][6] = {
-	{1,1,1,1,1,1},
-	{1,1,1,1,1,1},
-	{0,0,0,0,0,0},
-	{0,0,0,0,0,0},
-	{2,2,2,2,2,2},
-	{2,2,2,2,2,2}
+	{ 1,1,1,1,1,1 },
+	{ 1,1,1,1,1,1 },
+	{ 0,0,0,0,0,0 },
+	{ 0,0,0,0,0,0 },
+	{ 2,2,2,2,2,2 },
+	{ 2,2,2,2,2,2 }
 };
 
 void ChessBoard::initIdList() {
@@ -42,6 +43,18 @@ ChessBoard::ChessBoard(BYTE position[6][6], bool isBlackFirst) {
 
 	attachLoopList();
 	chkLoopStart();
+	initIdList();
+}
+
+ChessBoard::ChessBoard(ChessBoard & copy) {
+	memcpy(position, copy.position, sizeof(BYTE) * 36);
+	isBlackTurn = copy.isBlackTurn;
+	bNum = copy.bNum;
+	rNum = copy.rNum;
+
+	attachLoopList();
+	chkLoopStart();
+
 	initIdList();
 }
 
@@ -89,7 +102,7 @@ bool ChessBoard::getTurn() {
 	return isBlackTurn;
 }
 
-int ChessBoard::getLoopStart(int arc,int color) {
+int ChessBoard::getLoopStart(int arc, int color) {
 	return loopStart[arc][color];
 }
 
@@ -103,7 +116,8 @@ inline void ChessBoard::chkLoopStart() {
 				if (!foundColor) {
 					foundColor = *loop[arc][index];
 					loopStart[arc][NOCHESS] = loopStart[arc][foundColor] = index;
-				} else if (*loop[arc][index] == 3 - foundColor) {
+				}
+				else if (*loop[arc][index] == 3 - foundColor) {
 					loopStart[arc][3 - foundColor] = index;
 					loopStart[arc][NOCHESS] = min(loopStart[arc][BLACK], loopStart[arc][RED]);
 					break;
@@ -127,7 +141,7 @@ void ChessBoard::move(int fX, int fY, int tX, int tY) {
 		isBlackTurn ? BLACK : RED,
 		!position[tX][tY]);
 	this->move(move);
-	isBlackTurn = !isBlackTurn; 
+	isBlackTurn = !isBlackTurn;
 }
 
 void ChessBoard::move(CHESSMOVE move) {
@@ -154,7 +168,7 @@ void ChessBoard::unMove() {
 	moves.pop();
 
 	BYTE sColor = move.Side;
-	BYTE eColor = move.isMove ? 0 : 3-sColor;
+	BYTE eColor = move.isMove ? 0 : 3 - sColor;
 
 	rawId -= idList[move.To.x][move.To.y][sColor];
 	rawId += idList[move.From.x][move.From.y][sColor];
@@ -172,7 +186,7 @@ void ChessBoard::unMove() {
 }
 
 ID_TYPE ChessBoard::getId() {
-	return isBlackTurn ? getIdRaw()|SIG_BLACK : getIdRaw();
+	return isBlackTurn ? getIdRaw() | SIG_BLACK : getIdRaw();
 }
 
 ID_TYPE ChessBoard::getIdRaw() {
@@ -195,7 +209,7 @@ int ChessBoard::getMoves() {
 }
 
 int ChessBoard::isGameOver() {
-	if (bNum&&rNum) 
+	if (bNum&&rNum)
 		return 0;
 	return bNum ? B_WIN : R_WIN;
 }
@@ -212,6 +226,14 @@ void ChessBoard::getPosition(BYTE pos[][6]) {
 	memcpy(pos, position, sizeof(BYTE) * 36);
 }
 
+void ChessBoard::outputPosition()
+{
+	CString temp;
+	temp.Format(
+		"%d %d %d %d %d %d\n%d %d %d %d %d %d\n%d %d %d %d %d %d\n%d %d %d %d %d %d\n%d %d %d %d %d %d\n%d %d %d %d %d %d",position[0][0],position[0][1],position[0][2],position[0][3],position[0][4],position[0][5], position[1][0], position[1][1], position[1][2], position[1][3], position[1][4], position[1][5], position[2][0], position[2][1], position[2][2], position[2][3], position[2][4], position[2][5], position[3][0], position[3][1], position[3][2], position[3][3], position[3][4], position[3][5], position[4][0], position[4][1], position[4][2], position[4][3], position[4][4], position[4][5], position[5][0], position[5][1], position[5][2], position[5][3], position[5][4], position[5][5]);
+	AfxMessageBox(temp);
+}
+
 BYTE * ChessBoard::operator[](int x) {
 	return position[x];
 }
@@ -222,10 +244,10 @@ BYTE & ChessBoard::operator[](CHESSNAMPOS pos) {
 
 BYTE& ChessBoard::operator()(int arc, int index) {
 	return *loop[arc][index];
-	// TODO: ÔÚ´Ë´¦²åÈë return Óï¾ä
+	// TODO: Ú´Ë´ return 
 }
 
-BYTE& ChessBoard::pInner(int index){
+BYTE& ChessBoard::pInner(int index) {
 	return *loop[INNER][index];
 }
 
