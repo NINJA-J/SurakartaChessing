@@ -101,5 +101,4 @@ typedef struct node{
 	int color;//ÑÕÉ«
 }Node;
 
-
 #endif // !defined(AFX_DEFINE_H__315ABE2D_6AB8_4DBC_AE20_5EA359AC5B00__INCLUDED_)

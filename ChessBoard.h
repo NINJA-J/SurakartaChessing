@@ -24,17 +24,18 @@ private:
 
 	ID_TYPE rawId;
 	ID_TYPE idList[6][6][3];
-	stack<CHESSMOVE> moves,cMoves;
+	stack<CHESSMOVE> moves;
 
 	static const BYTE defaultStartBoard[6][6];
 	void initIdList();
 
-	int bNum , rNum ;//红方，黑方棋子数量
-public: 
+	int bNum, rNum;//红方，黑方棋子数量
+public:
 	ChessBoard(bool isBlackFirst = true);
 	ChessBoard(BYTE position[6][6], bool isBlackFirst = true);
+	ChessBoard::ChessBoard(ChessBoard & copy);
 	bool setChessPosition(const BYTE position[6][6], bool isBlackFirst = true);
-	void printBoard(char* board = NULL,char noChess = '-', char black = '*', char red = 'O');
+	void printBoard(char* board = NULL, char noChess = '-', char black = '*', char red = 'O');
 
 	bool setTurn(bool isBlackTurn);
 	bool getTurn();
@@ -45,7 +46,7 @@ public:
 	int getMoves();
 	int isGameOver();//在搜索中用到，表示某一方的搜索树的终局
 
-	int getLoopStart(int arc,int color = NOCHESS);
+	int getLoopStart(int arc, int color = NOCHESS);
 	inline void chkLoopStart();
 	void attachLoopList();
 	ID_TYPE getId();
@@ -54,7 +55,7 @@ public:
 	int getNums(bool isBlack);
 	int getSearchMoves();
 	void getPosition(BYTE pos[][6]);
-
+	void outputPosition();
 	BYTE* operator[](int x);
 	BYTE& operator[](CHESSNAMPOS pos);
 	BYTE& operator()(int arc, int index);

@@ -8,7 +8,7 @@
 #include <cstdlib>
 #ifdef _DEBUG
 #undef THIS_FILE
-static char THIS_FILE[]=__FILE__;
+static char THIS_FILE[] = __FILE__;
 #define new DEBUG_NEW
 #endif
 
@@ -65,7 +65,7 @@ const int CEvaluation::posScore[3][6][6] = {
 	}
 };
 
-CEvaluation::CEvaluation(){}
+CEvaluation::CEvaluation() {}
 
 CEvaluation::~CEvaluation() {}
 
@@ -86,13 +86,13 @@ BV_TYPE CEvaluation::evaluate(ChessBoard &board, bool isBlackTurn) {
 		6, //numWeight	- 子力权值
 		5  //arcWeight	- 占弧权值
 	);
-	
-	 return  weights * analysis(board,isBlackTurn);
+
+	return  weights * analysis(board, isBlackTurn);
 }
 
-ValueVector CEvaluation::analysis(ChessBoard &board,bool isBlackTurn)
+ValueVector CEvaluation::analysis(ChessBoard &board, bool isBlackTurn)
 {
-	ValueVector rVal,bVal;
+	ValueVector rVal, bVal;
 
 #ifdef USE_NEW_ANALYSIS
 	int s, e;//起点下标，终点下标，起点颜色，终点颜色
@@ -130,11 +130,11 @@ ValueVector CEvaluation::analysis(ChessBoard &board,bool isBlackTurn)
 				s = board.getLoopStart(arc);
 				e = (s + dir) % 24;
 
-				colorS = board(arc,s);//保留起点颜色，起点置空，和旧函数思路一样
-				board(arc,s) = 0;
+				colorS = board(arc, s);//保留起点颜色，起点置空，和旧函数思路一样
+				board(arc, s) = 0;
 
 				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
-					colorE = board(arc,e);
+					colorE = board(arc, e);
 					if (board(arc, e)) {
 						if (s / 6 != e / 6)
 							colorS != colorE ?
@@ -156,8 +156,8 @@ ValueVector CEvaluation::analysis(ChessBoard &board,bool isBlackTurn)
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
 			if (board[i][j]) {
-				board[i][j] == BLACK ? 
-					(bVal.posValue += posScore[0][i][j]) : 
+				board[i][j] == BLACK ?
+					(bVal.posValue += posScore[0][i][j]) :
 					(rVal.posValue += posScore[0][i][j]);
 				for (int x = -1; x <= 1; x++) {
 					for (int y = -1; y <= 1; y++) {
@@ -172,8 +172,8 @@ ValueVector CEvaluation::analysis(ChessBoard &board,bool isBlackTurn)
 		}
 	}
 
-	bVal.arcValue = getArcValue(board,B_PLAYING);
-	rVal.arcValue = getArcValue(board,R_PLAYING);
+	bVal.arcValue = getArcValue(board, B_PLAYING);
+	rVal.arcValue = getArcValue(board, R_PLAYING);
 
 	bVal.numValue = board.getNums(B_PLAYING);
 	rVal.numValue = board.getNums(R_PLAYING);
@@ -199,7 +199,8 @@ ValueVector CEvaluation::analysisOld(ChessBoard & board, bool isBlackTurn) {
 							if (position[m][n] != position[i][j]) {
 								if (mg.IsValidMove(position, m, n, i, j))
 									(position[m][n] == playColor ? val.aValue++ : val.aValue--);
-							} else {
+							}
+							else {
 								position[i][j] = 3 - position[m][n];
 								if (mg.IsValidMove(position, m, n, i, j))
 									(position[m][n] == playColor ? val.pValue++ : val.pValue--);
@@ -216,7 +217,7 @@ ValueVector CEvaluation::analysisOld(ChessBoard & board, bool isBlackTurn) {
 
 int CEvaluation::GetArcValue(BYTE position[6][6], BOOL IsBlackturn)
 {
-	int BArcNum=0, RArcNum=0, NoArcNum=0;
+	int BArcNum = 0, RArcNum = 0, NoArcNum = 0;
 	int i;
 	for (i = 1; i < 5; i++) {
 		if (position[i][0] == 1)
@@ -297,7 +298,7 @@ bool CEvaluation::addBoardValue(ID_TYPE id, int depth, BV_TYPE value) {
 	return true;
 }
 
-int CEvaluation::getArcValue(ChessBoard &board,bool isBlack) {
+int CEvaluation::getArcValue(ChessBoard &board, bool isBlack) {
 	int BArcNum = 0, RArcNum = 0, NoArcNum = 0;
 	int i;
 	for (i = 1; i < 5; i++) {
