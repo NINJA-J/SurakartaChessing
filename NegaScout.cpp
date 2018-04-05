@@ -7,30 +7,110 @@
 #include "NegaScout.h"
 #include "Define.h"
 
+#include <queue>
+
+#include <atomic>
+#include <thread>
+#include <future>
+#include <mutex>
+#include <condition_variable>
+
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
+#define USE_MULTI_PROCESS
+
+struct ABParam {
+	//AB剪枝参数
+	BYTE position[6][6];
+	bool isBlackTurn;
+	bool isBlackPlay;
+	int depth;
+	BV_TYPE alpha;
+	BV_TYPE beta;
+	struct ABParam() {};
+	struct ABParam(ABParam &param) {
+		memcpy(position, param.position, sizeof(BYTE) * 36);
+		isBlackTurn = param.isBlackTurn;
+		isBlackPlay = param.isBlackPlay;
+		depth = param.depth;
+		alpha = param.alpha;
+		beta = param.beta;
+	}
+	struct ABParam(ChessBoard board, bool _isBlackPlay, int _depth, BV_TYPE _alpha, BV_TYPE _beta) {
+		board.getPosition(position);
+		isBlackTurn = board.getTurn();
+		isBlackPlay = _isBlackPlay;
+		depth = _depth;
+		alpha = _alpha;
+		beta = _beta;
+	}
+}ABparam[96];
+
+mutex paramMutex;
+queue<ABParam> paramReady;
+int  procGet = 0;
+condition_variable procGetParam;
+
+mutex scoreSaveMutex;
+queue<BV_TYPE> scoreReturned;
+
+mutex threadInitMutex;
+bool threadInited = false;
+thread threads[96];
+
+mutex mtxReady;
+mutex mtx;	//全局互斥锁
+condition_variable cv;	//全局条件变量
+bool ready = false;
+int sk = 0;
+int runNums = 0;
+double smallTreeValue[20];
+int waiterNum = 0;
+
+bool CNegaScout::threadInited = false;
+thread CNegaScout::threads[96];
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 ///////////////////// /////////////////////////////////////////////////
 //#define ABDebug
+
+/*CNegaScout::CNegaScout(int k) {
+	for (int i = 0; i < 96; i++)
+	{
+		threads[i] = thread(this->threadMain);
+		//threads[i].join();
+	}
+}*/
+
 CNegaScout::CNegaScout(){
+	unique_lock<mutex> threadInitLock(threadInitMutex);
+	if (!threadInited) {
+		initThread();
+		threadInited = true;
+	}
 }
 
-CNegaScout::~CNegaScout() {}
+CNegaScout::~CNegaScout() {
+	unique_lock<mutex> threadInitLock(threadInitMutex);
+	if (threadInited) {
+		deleteThread();
+		threadInited = false;
+	}
+}
 
-CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6],bool m_isPlayerBlack) {
+CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6], bool m_isPlayerBlack) {
+#ifndef USE_MULTI_PROCESS
 	BV_TYPE score;
 
 	chessBoard.setChessPosition(position, m_isPlayerBlack);
 	isBlackPlay = m_isPlayerBlack;
 	m_nMaxDepth = m_nSearchDepth;
 
-	//NegaScout_TT_HH(m_nMaxDepth,0,m_isPlayerBlack);
-	//NegaScout_ABTree(m_nMaxDepth, m_isPlayerBlack);
 	score = negaScoutMinWin(m_nMaxDepth, m_isPlayerBlack);
 
 	chessBoard.move(bestMove);
@@ -38,11 +118,26 @@ CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6],bool m_isPlayerBlack) 
 
 	CString temp;
 	temp.Format(
-		"走法：(%d,%d)->(%d,%d)\n分数：%f", 
+		"走法：(%d,%d)->(%d,%d)\n分数：%f",
 		bestMove.From.x, bestMove.From.y, bestMove.To.x, bestMove.To.y, score
 	);
 	AfxMessageBox(temp);
 	return bestMove;
+#else
+	BV_TYPE score;
+
+	chessBoard.setChessPosition(position, m_isPlayerBlack);
+	isBlackPlay = m_isPlayerBlack;
+	m_nMaxDepth = m_nSearchDepth;
+
+	score = negaScoutMinWinProc(m_nMaxDepth, m_isPlayerBlack);
+	//score = negaScoutMinWin(chessBoard, m_nMaxDepth, m_isPlayerBlack);
+
+	chessBoard.move(bestMove);
+	m_pEval.evaluate(chessBoard, m_isPlayerBlack);
+	chessBoard.getPosition(position);
+	return bestMove;
+#endif
 }
 
 double CNegaScout::NegaScout_TT_HH(int depth,int num,bool isBlackPlay)
@@ -127,7 +222,70 @@ double CNegaScout::NegaScout_ABTree(int depth, bool isBlackPlay, BV_TYPE alpha, 
 	return best;//返回最值
 }
 
-double CNegaScout::negaScoutMinWin(int depth, bool isBlackPlay, BV_TYPE alpha, BV_TYPE beta) {
+double CNegaScout::negaScoutMinWin(ChessBoard chessBoard, int depth, bool isBlackPlay, BV_TYPE alpha, BV_TYPE beta) {
+	CHESSMOVE moveList[200];
+	bool isMax = (m_nMaxDepth - depth) % 2 == 0;
+	int side = (m_nMaxDepth - depth + isBlackPlay) % 2;//当前层谁走子
+
+	BV_TYPE best = isMax ? MIN_VALUE : MAX_VALUE;//初始化搜索的估值的最值
+
+	if (int i = isGameOver(chessBoard)) return i;//终局
+#ifdef USE_MAP
+	if (m_pEval.getBoardValue(chessBoard.getId(), depth, best)) {
+		if (depth == m_nMaxDepth) {
+			best;
+		}
+		return best;
+	}
+#endif
+	if (depth <= 0) {
+		BV_TYPE value = m_pEval.evaluate(chessBoard, isBlackPlay);//叶结点
+#ifdef USE_MAP
+		m_pEval.addBoardValue(chessBoard.getId(), 0, value);
+#endif
+		return value;
+	}
+
+	int count = m_pMG.createPossibleMoves(chessBoard, moveList, 200);
+
+	for (int i = 0; i < count; i++) {
+		chessBoard.move(moveList[i]);
+		BV_TYPE t;
+		if (isMax) {
+			t = negaScoutMinWin(chessBoard, depth - 1, isBlackPlay, best, MAX_VALUE);
+		} else {
+			t = negaScoutMinWin(chessBoard, depth - 1, isBlackPlay, MIN_VALUE, best);
+		}
+	/*	if (depth == 3) {
+			//	chessBoard.outputPosition();
+			CString temp;
+			temp.Format(
+				"子树分数%lf,状态%lld,深度%d,alpha%lf，beta%lf", t, chessBoard.getIdNormal(), depth, alpha, beta);
+			AfxMessageBox(temp);
+		}*/
+		chessBoard.unMove();
+
+		if (isMax) {
+			if (best < t) { //获得更大的估值
+				alpha = best = t; //更新最值和alpha
+				if (depth == m_nMaxDepth) {
+					bestMove = moveList[i];
+				}
+			}
+			if (best >= beta) return best; //无法使上层变小，剪枝
+		}
+		else {
+			if (best > t) beta = best = t;
+			if (best <= alpha) return best;
+		}
+	}
+#ifdef USE_MAP
+	m_pEval.addBoardValue(chessBoard.getId(), depth, best);
+#endif
+	return best;//返回最值
+}
+
+double CNegaScout::negaScoutMinWinProc(int depth, bool isBlackPlay, BV_TYPE alpha, BV_TYPE beta) {
 	CHESSMOVE moveList[200];
 	bool isMax = (m_nMaxDepth - depth) % 2 == 0;
 	int side = (m_nMaxDepth - depth + isBlackPlay) % 2;//当前层谁走子
@@ -135,28 +293,104 @@ double CNegaScout::negaScoutMinWin(int depth, bool isBlackPlay, BV_TYPE alpha, B
 	BV_TYPE best = isMax ? MIN_VALUE : MAX_VALUE;//初始化搜索的估值的最值
 
 	if (int i = isGameOver()) return i;//终局
-	if (depth <= 0) return m_pEval.evaluate(chessBoard, isBlackPlay);//叶结点
-	if (m_pEval.getBoardValue(chessBoard.getId(), depth, best)) return best;
+#ifdef USE_MAP[]
+	if (m_pEval.getBoardValue(chessBoard.getId(), depth, best)) {
+		if (depth == m_nMaxDepth) {
+			best;
+		}
+		return best;
+	}
+#endif
 
-	int count = m_pMG.createPossibleMoves(chessBoard,moveList, 200);
+	int count = m_pMG.createPossibleMoves(chessBoard, moveList, 200);
 	for (int i = 0; i < count; i++) {
+		//走子
 		chessBoard.move(moveList[i]);
-		BV_TYPE t = isMax ?
-			negaScoutMinWin(depth - 1, isBlackPlay, best, MAX_INT) :
-			negaScoutMinWin(depth - 1, isBlackPlay, MIN_INT, best);
+		//进入<分配任务>临界区加锁
+		unique_lock<mutex> paramLock(paramMutex);
+		//<分配任务>
+		AfxMessageBox("分配任务");
+		paramReady.push(
+			ABParam(chessBoard, isBlackPlay, depth - 1,
+				isMax ? best : MIN_VALUE,
+				isMax ? MAX_VALUE : best
+			)
+		);
+		//退出<分配任务>临界区去锁
+		paramLock.unlock();
+		//唤醒线程
+		procGetParam.notify_one();
+		//撤销走子
 		chessBoard.unMove();
-
+	}
+	CString temp;
+	temp.Format("分配结束：%d->%d", count, procGet);
+	AfxMessageBox(temp);
+	//等待返回值
+	while (scoreReturned.size() != count);
+	AfxMessageBox("所有线程结束");
+	//处理返回值
+	while (scoreReturned.size()) {
+		BV_TYPE t = scoreReturned.front();
+		scoreReturned.pop();
 		if (isMax) {
-			if (best < t) { //获得更大的估值
-				alpha = best = t; //更新最值和alpha
-				if (depth == m_nMaxDepth) bestMove = moveList[i];
-			}
-			if (best >= beta) return best; //无法使上层变小，剪枝
+			if (best < t) alpha = best = t; //更新最值和alpha
+			if (best >= beta) break; //无法使上层变小，剪枝
 		} else {
 			if (best > t) beta = best = t;
-			if (best <= alpha) return best;
+			if (best <= alpha) break;
 		}
 	}
+	AfxMessageBox("剪枝结束");
+	//清空队列
+	while (scoreReturned.size())scoreReturned.pop();
+
+#ifdef USE_MAP
 	m_pEval.addBoardValue(chessBoard.getId(), depth, best);
+#endif
 	return best;//返回最值
+}
+
+double CNegaScout::threadMain(int id) {
+	CNegaScout negaScout;//搜索引擎的指针
+	negaScout.SetSearchDepth(3);//设定搜索层数
+
+	double otherScore;
+	while (1) {
+		unique_lock<mutex> paramLock(paramMutex);
+		procGetParam.wait(paramLock);
+		CString temp;
+		temp.Format("%d线程接收任务", id);
+		procGet++;
+		AfxMessageBox(temp);
+		if (!paramReady.size())break;
+		ABParam param = paramReady.front();
+		paramReady.pop();
+		paramLock.unlock();
+
+		ChessBoard chessBoard(param.position, param.isBlackTurn);
+		otherScore = negaScout.negaScoutMinWin(
+			chessBoard, 
+			param.depth, 
+			param.isBlackPlay, 
+			param.alpha, 
+			param.beta
+		);
+		unique_lock<mutex> scoreLock(scoreSaveMutex);
+		scoreReturned.push(otherScore);
+	}
+	return 0.0;
+}
+
+void CNegaScout::initThread() {
+	for (int i = 0; i < 96; i++) {
+		threads[i] = thread(threadMain,i);
+	};
+}
+
+void CNegaScout::deleteThread() {
+	procGetParam.notify_all();//无任务时线程唤醒自动退出
+	for (int i = 0; i < 96; i++) {
+		threads[i].join();
+	}
 }

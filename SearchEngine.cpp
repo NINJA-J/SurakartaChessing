@@ -38,9 +38,18 @@ void CSearchEngine::UnMakeMove(CHESSMOVE *move ,BYTE nChessID) {//恢复棋盘
 	CurPosition[move->To.x][move->To.y]=nChessID;
 }
 
-int CSearchEngine::isGameOver() {//未结束返回0，结束返回极大/极小值
+BV_TYPE CSearchEngine::isGameOver() {//未结束返回0，结束返回极大/极小值
 	if (int type = chessBoard.isGameOver()) {
 		int score = MAX_INT - chessBoard.getMoves() - 1;
+		return ((type == B_WIN) ^ isBlackPlay) ? -score : score; //异或
+	}
+	else
+		return 0;
+}
+
+BV_TYPE CSearchEngine::isGameOver(ChessBoard chessBoard) {//未结束返回0，结束返回极大/极小值
+	if (int type = chessBoard.isGameOver()) {
+		int score = MAX_VALUE - chessBoard.getMoves() - 1;
 		return ((type == B_WIN) ^ isBlackPlay) ? -score : score; //异或
 	}
 	else

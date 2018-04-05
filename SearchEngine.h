@@ -26,7 +26,8 @@ public:
 protected:
 	BYTE MakeMove(CHESSMOVE *move);//由某一走法产生走了之后的棋盘
 	void UnMakeMove(CHESSMOVE *move ,BYTE nChessID);//恢复一步
-	int isGameOver();//判断是否有胜负
+	BV_TYPE isGameOver();//判断是否有胜负
+	BV_TYPE isGameOver(ChessBoard chessBoard);
 	BYTE CurPosition[6][6];//当前节点棋盘的状态
 	CHESSMOVE bestMove;//记录最佳的走法
 	CMoveGenerator m_pMG;//走法产生器指针
