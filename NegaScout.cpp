@@ -31,6 +31,7 @@ struct ABParam {
 	int depth;
 	BV_TYPE alpha;
 	BV_TYPE beta;
+	int moveId;
 	struct ABParam() {};
 	struct ABParam(ABParam &param) {
 		memcpy(position, param.position, sizeof(BYTE) * 36);
@@ -39,14 +40,16 @@ struct ABParam {
 		depth = param.depth;
 		alpha = param.alpha;
 		beta = param.beta;
+		moveId = param.moveId;
 	}
-	struct ABParam(ChessBoard board, bool _isBlackPlay, int _depth, BV_TYPE _alpha, BV_TYPE _beta) {
+	struct ABParam(ChessBoard board, bool _isBlackPlay, int _depth, BV_TYPE _alpha, BV_TYPE _beta,int _moveId) {
 		board.getPosition(position);
 		isBlackTurn = board.getTurn();
 		isBlackPlay = _isBlackPlay;
 		depth = _depth;
 		alpha = _alpha;
 		beta = _beta;
+		moveId = _moveId;
 	}
 }ABparam[96];
 
@@ -55,8 +58,12 @@ queue<ABParam> paramReady;
 int  procGet = 0;
 condition_variable procGetParam;
 
-mutex scoreSaveMutex;
+mutex scoreMutex;
+condition_variable scoreSaveCV;
+condition_variable scoreReadCV;
 queue<BV_TYPE> scoreReturned;
+BV_TYPE score;
+int moveId;
 
 mutex threadInitMutex;
 bool threadInited = false;
@@ -77,16 +84,11 @@ thread CNegaScout::threads[96];
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 ///////////////////// /////////////////////////////////////////////////
-//#define ABDebug
 
-/*CNegaScout::CNegaScout(int k) {
-	for (int i = 0; i < 96; i++)
-	{
-		threads[i] = thread(this->threadMain);
-		//threads[i].join();
-	}
-}*/
-
+/* 在构造函数中加入输出语句后发现程序每一帧都会析构NegaScout和创建新的NegaScout，因此线程池的创建采用单次创建方式
+ * 用静态的bool变量存储是否创建过线程池，析构时判断若创建过则进行析构操作
+ * 线程的中止方式可见threadMain函数，采用无任务自动跳出循环的方式，即将任务清空（析构是一般都是这样）后notify_all
+ */
 CNegaScout::CNegaScout(){
 	unique_lock<mutex> threadInitLock(threadInitMutex);
 	if (!threadInited) {
@@ -102,7 +104,9 @@ CNegaScout::~CNegaScout() {
 		threadInited = false;
 	}
 }
+/* 加入了USE_MULTI_PROCESS（使用多线程）宏定义，保留原来的非多线程方法
 
+ */
 CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6], bool m_isPlayerBlack) {
 #ifndef USE_MULTI_PROCESS
 	BV_TYPE score;
@@ -256,27 +260,20 @@ double CNegaScout::negaScoutMinWin(ChessBoard chessBoard, int depth, bool isBlac
 		} else {
 			t = negaScoutMinWin(chessBoard, depth - 1, isBlackPlay, MIN_VALUE, best);
 		}
-	/*	if (depth == 3) {
-			//	chessBoard.outputPosition();
-			CString temp;
-			temp.Format(
-				"子树分数%lf,状态%lld,深度%d,alpha%lf，beta%lf", t, chessBoard.getIdNormal(), depth, alpha, beta);
-			AfxMessageBox(temp);
-		}*/
 		chessBoard.unMove();
 
 		if (isMax) {
+			if (t > beta) return best; //无法使上层变小，剪枝
 			if (best < t) { //获得更大的估值
 				alpha = best = t; //更新最值和alpha
 				if (depth == m_nMaxDepth) {
 					bestMove = moveList[i];
 				}
 			}
-			if (best >= beta) return best; //无法使上层变小，剪枝
 		}
 		else {
+			if (t < alpha) return best;
 			if (best > t) beta = best = t;
-			if (best <= alpha) return best;
 		}
 	}
 #ifdef USE_MAP
@@ -287,12 +284,6 @@ double CNegaScout::negaScoutMinWin(ChessBoard chessBoard, int depth, bool isBlac
 
 double CNegaScout::negaScoutMinWinProc(int depth, bool isBlackPlay, BV_TYPE alpha, BV_TYPE beta) {
 	CHESSMOVE moveList[200];
-	bool isMax = (m_nMaxDepth - depth) % 2 == 0;
-	int side = (m_nMaxDepth - depth + isBlackPlay) % 2;//当前层谁走子
-
-	BV_TYPE best = isMax ? MIN_VALUE : MAX_VALUE;//初始化搜索的估值的最值
-
-	if (int i = isGameOver()) return i;//终局
 #ifdef USE_MAP[]
 	if (m_pEval.getBoardValue(chessBoard.getId(), depth, best)) {
 		if (depth == m_nMaxDepth) {
@@ -303,47 +294,46 @@ double CNegaScout::negaScoutMinWinProc(int depth, bool isBlackPlay, BV_TYPE alph
 #endif
 
 	int count = m_pMG.createPossibleMoves(chessBoard, moveList, 200);
+	//获取变量操作锁
+	unique_lock<mutex> paramLock(paramMutex);
+	
 	for (int i = 0; i < count; i++) {
 		//走子
 		chessBoard.move(moveList[i]);
-		//进入<分配任务>临界区加锁
-		unique_lock<mutex> paramLock(paramMutex);
-		//<分配任务>
-		AfxMessageBox("分配任务");
+		//分配任务
 		paramReady.push(
-			ABParam(chessBoard, isBlackPlay, depth - 1,
-				isMax ? best : MIN_VALUE,
-				isMax ? MAX_VALUE : best
+			ABParam(
+				chessBoard, isBlackPlay, depth - 1,
+				MIN_VALUE, MAX_VALUE, i
 			)
 		);
-		//退出<分配任务>临界区去锁
-		paramLock.unlock();
-		//唤醒线程
-		procGetParam.notify_one();
-		//撤销走子
+		//撤子
 		chessBoard.unMove();
 	}
-	CString temp;
-	temp.Format("分配结束：%d->%d", count, procGet);
-	AfxMessageBox(temp);
-	//等待返回值
-	while (scoreReturned.size() != count);
-	AfxMessageBox("所有线程结束");
-	//处理返回值
-	while (scoreReturned.size()) {
-		BV_TYPE t = scoreReturned.front();
-		scoreReturned.pop();
-		if (isMax) {
-			if (best < t) alpha = best = t; //更新最值和alpha
-			if (best >= beta) break; //无法使上层变小，剪枝
-		} else {
-			if (best > t) beta = best = t;
-			if (best <= alpha) break;
+	//唤醒一个线程
+	paramLock.unlock();
+	procGetParam.notify_one();
+	//开始等待线程返回结果
+	unique_lock<mutex> scoreLock(scoreMutex);
+	//初始化结果返回数量0
+	int scoreRtn = 0;
+	//初始化最佳值
+	BV_TYPE best = MIN_VALUE;
+	//若所有线程未全部返回值，继续循环
+	while (scoreRtn < count) {
+		//等待赋值操作锁
+		/* 问题：这里有可能发生死锁问题，猜想原因是分配任务是丢失任务或者子线程死循环导致返回值数量不正确
+		 * 暂时还未想出测试方案，而且使用多线程后虽然速度方面没有大碍，但是落子后有明显卡顿，还不知道原因
+		 */
+		scoreReadCV.wait(scoreLock);
+		//返回数量加一
+		scoreRtn++;
+		//获取最佳走法
+		if (score > best) {
+			best = score;
+			bestMove = moveList[moveId];
 		}
 	}
-	AfxMessageBox("剪枝结束");
-	//清空队列
-	while (scoreReturned.size())scoreReturned.pop();
 
 #ifdef USE_MAP
 	m_pEval.addBoardValue(chessBoard.getId(), depth, best);
@@ -353,22 +343,27 @@ double CNegaScout::negaScoutMinWinProc(int depth, bool isBlackPlay, BV_TYPE alph
 
 double CNegaScout::threadMain(int id) {
 	CNegaScout negaScout;//搜索引擎的指针
-	negaScout.SetSearchDepth(3);//设定搜索层数
+	/* 可参考SearchEngine.h文件，我将evaluation和movegenerator
+	 * 都设置为私有变量而不是指针，故不再需要后面的两个函数
+	 */
+	negaScout.SetSearchDepth(6);//设定搜索层数
 
-	double otherScore;
+	unique_lock<mutex> paramLock(paramMutex);
+
+	BV_TYPE otherScore;
 	while (1) {
-		unique_lock<mutex> paramLock(paramMutex);
+		//获取锁，判断有任务则执行，无任务则退出线程
 		procGetParam.wait(paramLock);
-		CString temp;
-		temp.Format("%d线程接收任务", id);
-		procGet++;
-		AfxMessageBox(temp);
-		if (!paramReady.size())break;
+		if (!paramReady.size()) break;
+		//获取任务
 		ABParam param = paramReady.front();
 		paramReady.pop();
-		paramLock.unlock();
-
+		//若还有任务，唤醒下一个线程
+		if (paramReady.size()) 
+			procGetParam.notify_one();
+		//初始化chessBoard
 		ChessBoard chessBoard(param.position, param.isBlackTurn);
+		//运行剪枝
 		otherScore = negaScout.negaScoutMinWin(
 			chessBoard, 
 			param.depth, 
@@ -376,8 +371,16 @@ double CNegaScout::threadMain(int id) {
 			param.alpha, 
 			param.beta
 		);
-		unique_lock<mutex> scoreLock(scoreSaveMutex);
+		//准备返回评估值，采用一次返回一个值的方式，可修改，我采用这个方法
+		unique_lock<mutex> scoreLock(scoreMutex);
+		//存储值，两种思路，
+		//用优先队列存储多个值，问题是不好判断值对应的走棋，可尝试返回结构体数据
+		//用两个全局变量，存储评估值和走棋id（对应moveList的下标）
 		scoreReturned.push(otherScore);
+		score = otherScore;
+		moveId = param.moveId;
+		//唤醒主线程读取结果
+		scoreReadCV.notify_one();
 	}
 	return 0.0;
 }

@@ -89,6 +89,7 @@ void ChessBoard::printBoard(char* board, char noChess, char black, char red) {
 		}
 		str += "\n";
 	}
+	str += "\0";
 	if (board) strcpy(board, str.c_str());
 }
 
