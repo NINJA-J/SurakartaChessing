@@ -19,6 +19,7 @@
 #include <condition_variable>
 
 #define PROC_DEPTH 0
+#define SEARCH_DEPTH 6
 
 //#define ABDebug
 class CNegaScout : 
@@ -33,15 +34,16 @@ public:
 	virtual CHESSMOVE SearchAGoodMove(BYTE position[6][6],bool m_isPlayerBlack);
 
 	void setPosition(BYTE position[6][6], bool isBlackTurn);
+	void setPlayerSide(bool isBlackPlay) { this->isBlackPlay = isBlackPlay; };
 	void move(CHESSMOVE move);
 
 	bool useMultiProcess(int depth);
 
 	BV_TYPE NegaScout_TT_HH(int depth,int num,bool isBlackPlay);
-	BV_TYPE NegaScout_ABTree(int depth, BV_TYPE alpha = MIN_VALUE, BV_TYPE beta = MAX_VALUE);
-	BV_TYPE negaScoutMinWin(int depth, bool isBlackPlay, BV_TYPE alpha = MIN_VALUE, BV_TYPE beta = MAX_VALUE);
-	BV_TYPE negaScoutMinWinProc(int depth, bool isBlackPlay, BV_TYPE alpha = MIN_VALUE, BV_TYPE beta = MAX_VALUE);
-	BV_TYPE negaScoutPVS(int depth, BV_TYPE alpha = MIN_VALUE, BV_TYPE beta = MAX_VALUE);
+	BV_TYPE NegaScout_ABTree(int depth = SEARCH_DEPTH, BV_TYPE alpha = MIN_VALUE, BV_TYPE beta = MAX_VALUE);
+	BV_TYPE negaScoutMinWin(int depth = SEARCH_DEPTH, BV_TYPE alpha = MIN_VALUE, BV_TYPE beta = MAX_VALUE);
+	BV_TYPE negaScoutMinWinProc(int depth = SEARCH_DEPTH, BV_TYPE alpha = MIN_VALUE, BV_TYPE beta = MAX_VALUE);
+	BV_TYPE negaScoutPVS(int depth = SEARCH_DEPTH, BV_TYPE alpha = MIN_VALUE, BV_TYPE beta = MAX_VALUE);
 
 	//	static void negaScoutMinWin(int kidTreeValue, ChessBoard chessBoard, int depth, bool isBlackPlay, BV_TYPE alpha = MIN_VALUE, BV_TYPE beta = MAX_VALUE);
 private:

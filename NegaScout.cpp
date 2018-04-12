@@ -21,10 +21,9 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
-//#define USE_MULTI_PROCESS
+#define USE_MULTI_PROCESS
 
 #define THREAD_N 96
-#define SEARCH_DEPTH 6
 
 #define USE_NEW_ABTREE
 
@@ -240,7 +239,7 @@ BV_TYPE CNegaScout::NegaScout_ABTree(int depth, BV_TYPE alpha, BV_TYPE beta) {
 #endif
 }
 
-BV_TYPE CNegaScout::negaScoutMinWin(int depth, bool isBlackPlay, BV_TYPE alpha, BV_TYPE beta) {
+BV_TYPE CNegaScout::negaScoutMinWin(int depth, BV_TYPE alpha, BV_TYPE beta) {
 	CHESSMOVE moveList[200];
 	bool isMax = (m_nMaxDepth - depth) % 2 == 0;
 	int side = (m_nMaxDepth - depth + isBlackPlay) % 2;//当前层谁走子
@@ -269,8 +268,8 @@ BV_TYPE CNegaScout::negaScoutMinWin(int depth, bool isBlackPlay, BV_TYPE alpha, 
 	for (int i = 0; i < count; i++) {
 		chessBoard.move(moveList[i]);
 		BV_TYPE t = isMax ?
-			negaScoutMinWin(depth - 1, isBlackPlay, best, MAX_VALUE) :
-			negaScoutMinWin(depth - 1, isBlackPlay, MIN_VALUE, best);
+			negaScoutMinWin(depth - 1, best, MAX_VALUE) :
+			negaScoutMinWin(depth - 1, MIN_VALUE, best);
 		chessBoard.unMove();
 
 		if (isMax) {
@@ -293,7 +292,7 @@ BV_TYPE CNegaScout::negaScoutMinWin(int depth, bool isBlackPlay, BV_TYPE alpha, 
 	return best;//返回最值
 }
 
-BV_TYPE CNegaScout::negaScoutMinWinProc(int depth, bool isBlackPlay, BV_TYPE alpha, BV_TYPE beta) {
+BV_TYPE CNegaScout::negaScoutMinWinProc(int depth, BV_TYPE alpha, BV_TYPE beta) {
 	CHESSMOVE moveList[200];
 #ifdef USE_MAP
 	if (m_pEval.getBoardValue(chessBoard.getId(), depth, best)) {
@@ -311,16 +310,22 @@ BV_TYPE CNegaScout::negaScoutMinWinProc(int depth, bool isBlackPlay, BV_TYPE alp
 	chessBoard.getPosition(position);
 
 	for (int i = 0; i < count; i++) {
+		chessBoard.move(moveList[i]);
+		chessBoard.getPosition(position);
+		isBlackTurn = chessBoard.getTurn();
+
 		results.emplace_back(
 			threadPool.enqueue([i](
-				BYTE position[6][6],CHESSMOVE move, 
-				bool isBlackTurn, bool isBlackPlay, 
+				BYTE position[6][6], bool isBlackTurn, bool isBlackPlay, 
 				int depth, BV_TYPE alpha, BV_TYPE beta
 				) {
-			CNegaScout negaScout(position, isBlackTurn, move);
+			CNegaScout negaScout(position, isBlackTurn);
 			negaScout.SetSearchDepth(SEARCH_DEPTH);
-			return negaScout.negaScoutMinWin(depth, isBlackPlay, MIN_VALUE, MAX_VALUE);
-		}, position, moveList[i], isBlackTurn, isBlackPlay, SEARCH_DEPTH - 1, alpha, beta));
+			negaScout.setPlayerSide(isBlackPlay);
+			return negaScout.negaScoutMinWin(depth, alpha, beta);
+		}, position, isBlackTurn, isBlackPlay, SEARCH_DEPTH - 1, MIN_VALUE, MAX_VALUE));
+
+		chessBoard.unMove();
 	}
 
 	BV_TYPE max = MIN_VALUE;
@@ -379,7 +384,7 @@ BV_TYPE CNegaScout::negaScoutPVS(int depth, BV_TYPE alpha, BV_TYPE beta) {
 	}
 #endif
 	if (depth <= 0) {
-		BV_TYPE value = m_pEval.evaluate(chessBoard, isBlackPlay);//叶结点
+		value = m_pEval.evaluate(chessBoard, isBlackPlay);//叶结点
 #ifdef USE_MAP
 		m_pEval.addBoardValue(chessBoard.getId(), 0, value);
 #endif
@@ -393,12 +398,13 @@ BV_TYPE CNegaScout::negaScoutPVS(int depth, BV_TYPE alpha, BV_TYPE beta) {
 			chessBoard.move(moveList[i]);
 
 			value = i ?
-				negaScoutPVS(depth - 1, alpha, alpha + 1) :
-				negaScoutPVS(depth - 1, alpha, beta);
+				negaScoutPVS(depth - 1, -alpha-1, -alpha) :
+				negaScoutPVS(depth - 1, -beta, -alpha);
 			if (alpha <value && value < beta)
-				value = negaScoutPVS(depth - 1, alpha, beta);
+				value = negaScoutPVS(depth - 1, -beta, -alpha);
 
 			chessBoard.unMove();
+
 			if (value > alpha) {
 				alpha = value;
 				if (alpha >= beta)
