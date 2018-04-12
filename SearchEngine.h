@@ -20,7 +20,7 @@ public:
 	//为当前局面走出下一步。接口
 	virtual CHESSMOVE SearchAGoodMove(BYTE position[6][6], bool m_isPlayerBlack)=0;
 	
-	void SetSearchDepth(int nDepth) {m_nSearchDepth=nDepth;};//设定最大搜索深度
+	void SetSearchDepth(int nDepth) {m_nMaxDepth=m_nSearchDepth=nDepth;};//设定最大搜索深度
 	void SetEveluator(CEvaluation *pEval) { /*m_pEval = pEval;*/ };//设定估值引擎		
 	void SetMoveGenerator(CMoveGenerator *pMG) { /*m_pMG = pMG;*/ };//设定走法产生器
 protected:

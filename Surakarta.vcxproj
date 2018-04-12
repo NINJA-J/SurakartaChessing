@@ -134,6 +134,7 @@
     <ClCompile Include="ChessBoard.cpp" />
     <ClCompile Include="Define.cpp" />
     <ClCompile Include="Evaluation.cpp" />
+    <ClCompile Include="example.cpp" />
     <ClCompile Include="MainFrm.cpp" />
     <ClCompile Include="MoveGenerator.cpp" />
     <ClCompile Include="NegaScout.cpp" />
@@ -168,6 +169,7 @@
     <ClInclude Include="Surakarta.h" />
     <ClInclude Include="SurakartaDoc.h" />
     <ClInclude Include="SurakartaView.h" />
+    <ClInclude Include="ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\b1.bmp" />
