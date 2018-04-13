@@ -5,57 +5,33 @@
 
 using namespace std;
 
-const BYTE ChessBoard::defaultStartBoard[6][6] = {
-	{ 1,1,1,1,1,1 },
-	{ 1,1,1,1,1,1 },
-	{ 0,0,0,0,0,0 },
-	{ 0,0,0,0,0,0 },
-	{ 2,2,2,2,2,2 },
-	{ 2,2,2,2,2,2 }
-};
-
-void ChessBoard::initIdList() {
-	long long temp = 1;
+void ChessBoard::initId() {
 	rawId = 0;
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
-			idList[i][j][NOCHESS] = 0;
-			idList[i][j][BLACK] = temp;
-			idList[i][j][RED] = -temp;
-			rawId += temp + idList[i][j][position[i][j]];
-			temp *= 3;
+			rawId += idList[i][j][BLACK] + idList[i][j][position[i][j]];
 		}
 	}
 }
 
-ChessBoard::ChessBoard(bool isBlackFirst) {
-	setChessPosition(defaultStartBoard);
-	setTurn(isBlackFirst);
+ChessBoard::ChessBoard(Task & t) {
+	setChessPosition(t.position, t.isBlackTurn);
+	rawId = t.boardId;
+}
 
-	attachLoopList();
-	chkLoopStart();
-	initIdList();
+ChessBoard::ChessBoard(bool isBlackFirst) {
+	setChessPosition(defaultStartBoard,isBlackFirst);
+	initId();
 }
 
 ChessBoard::ChessBoard(BYTE position[6][6], bool isBlackFirst) {
-	setChessPosition(position);
-	setTurn(isBlackFirst);
-
-	attachLoopList();
-	chkLoopStart();
-	initIdList();
+	setChessPosition(position,isBlackFirst);
+	initId();
 }
 
 ChessBoard::ChessBoard(ChessBoard & copy) {
-	memcpy(position, copy.position, sizeof(BYTE) * 36);
-	isBlackTurn = copy.isBlackTurn;
-	bNum = copy.bNum;
-	rNum = copy.rNum;
-
-	attachLoopList();
-	chkLoopStart();
-
-	initIdList();
+	setChessPosition(copy.position, copy.isBlackTurn);
+	rawId = copy.rawId;
 }
 
 bool ChessBoard::setChessPosition(const BYTE position[6][6], bool isBlackFirst) {

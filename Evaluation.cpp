@@ -18,8 +18,10 @@ static char THIS_FILE[] = __FILE__;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-BV_TYPE operator*(WeightVector weight, ValueVector value) {
-	double sum = 0;
+unordered_map<ID_TYPE, valUnion> CEvaluation::boardValue;
+
+int operator*(WeightVector weight, ValueVector value) {
+	int sum = 0;
 	sum += value.pValue * weight.pValue;
 	sum += value.aValue * weight.aValue;
 	sum += value.mValue * weight.mValue;
@@ -29,8 +31,8 @@ BV_TYPE operator*(WeightVector weight, ValueVector value) {
 	return sum;
 }
 
-BV_TYPE operator*(ValueVector value, WeightVector weight) {
-	double sum = 0;
+int operator*(ValueVector value, WeightVector weight) {
+	int sum = 0;
 	sum += value.pValue * weight.pValue;
 	sum += value.aValue * weight.aValue;
 	sum += value.mValue * weight.mValue;
@@ -69,7 +71,7 @@ CEvaluation::CEvaluation() {}
 
 CEvaluation::~CEvaluation() {}
 
-BV_TYPE CEvaluation::evaluate(ChessBoard &board, bool isBlackTurn) {
+int CEvaluation::evaluate(ChessBoard &board, bool isBlackTurn) {
 
 	//你需要在这个函数里添加有如下功能的代码：
 	//1.可以知道棋盘上敌方和我方棋子的数量
@@ -78,23 +80,14 @@ BV_TYPE CEvaluation::evaluate(ChessBoard &board, bool isBlackTurn) {
 	//4.尽量加一些其他估值方法
 
 	ValueVector values;
-	WeightVector weights(
-		1, //pWeight	- 保护权值
-		2, //aWeight	- 攻击权值
-		1, //mWeight	- 走子权值
-		1, //posWeight	- 位置权值
-		6, //numWeight	- 子力权值
-		5  //arcWeight	- 占弧权值
-	);
 
-	return  weights * analysis(board, isBlackTurn);
+	return  weight * analysis(board, isBlackTurn);
 }
 
-ValueVector CEvaluation::analysis(ChessBoard &board, bool isBlackTurn)
+ValueVector CEvaluation::analysis(ChessBoard &board, bool isBlackPlay)
 {
 	ValueVector rVal, bVal;
 
-#ifdef USE_NEW_ANALYSIS
 	int s, e;//起点下标，终点下标，起点颜色，终点颜色
 	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
 		int sIndex = board.getLoopStart(arc);
@@ -122,36 +115,7 @@ ValueVector CEvaluation::analysis(ChessBoard &board, bool isBlackTurn)
 			}
 		}
 	}
-#else
-	int s, e = -1, colorS, colorE;//起点下标，终点下标，起点颜色，终点颜色
-	for (int arc = INNER; arc <= OUTER; arc++) {//内外弧各循环一次
-		if (board.getLoopStart(arc) != -1) { //判断当前弧上有点
-			for (int dir = 1; dir <= 23; dir += 22) { // 顺时针/逆时针
-				s = board.getLoopStart(arc);
-				e = (s + dir) % 24;
 
-				colorS = board(arc, s);//保留起点颜色，起点置空，和旧函数思路一样
-				board(arc, s) = 0;
-
-				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
-					colorE = board(arc, e);
-					if (board(arc, e)) {
-						if (s / 6 != e / 6)
-							colorS != colorE ?
-							(colorS == BLACK ? bVal.aValue++ : rVal.aValue++) :
-							(colorS == BLACK ? bVal.pValue++ : rVal.pValue++);
-
-						board(arc, s) = colorS;//恢复起点颜色，继续搜索
-						s = e; //终点置为新起点
-						colorS = board(arc, s);//保留起点颜色，起点置空，和旧函数思路一样
-						board(arc, s) = 0;
-					}
-				}
-				if (!board(arc, s)) board(arc, s) = colorS;
-			}
-		}
-	}
-#endif
 	//生成走子着法
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
@@ -178,7 +142,7 @@ ValueVector CEvaluation::analysis(ChessBoard &board, bool isBlackTurn)
 	bVal.numValue = board.getNums(B_PLAYING);
 	rVal.numValue = board.getNums(R_PLAYING);
 
-	return isBlackTurn ? bVal - rVal : rVal - bVal;
+	return board.getTurn() != isBlackPlay ? bVal - rVal : rVal - bVal;
 }
 
 ValueVector CEvaluation::analysisOld(ChessBoard & board, bool isBlackTurn) {
@@ -279,15 +243,20 @@ int CEvaluation::GetArcValue(BYTE position[6][6], BOOL IsBlackturn)
 	}
 }
 
-bool CEvaluation::getBoardValue(ID_TYPE id, int depth, BV_TYPE & value) {
+bool CEvaluation::getBoardValue(ID_TYPE id, int depth, int & value) {
+#ifdef USE_MAP
 	unordered_map<ID_TYPE, valUnion>::const_iterator iter = boardValue.find(id);
 	if (iter == boardValue.end()) return false;
 	if (iter->second.depth < depth)return false;
 	value = iter->second.value;
 	return true;
+#else
+	return false;
+#endif
 }
 
-bool CEvaluation::addBoardValue(ID_TYPE id, int depth, BV_TYPE value) {
+int CEvaluation::addBoardValue(ID_TYPE id, int depth, int value) {
+#ifdef USE_MAP
 	unordered_map<ID_TYPE, valUnion>::iterator iter = boardValue.find(id);
 	if (iter == boardValue.end())
 		boardValue.insert({ id,valUnion(depth,value) });
@@ -295,7 +264,8 @@ bool CEvaluation::addBoardValue(ID_TYPE id, int depth, BV_TYPE value) {
 		iter->second.depth = depth;
 		iter->second.value = value;
 	}
-	return true;
+#endif
+	return value;
 }
 
 int CEvaluation::getArcValue(ChessBoard &board, bool isBlack) {
@@ -351,6 +321,10 @@ int CEvaluation::getArcValue(ChessBoard &board, bool isBlack) {
 	else {
 		return RArcNum + NoArcNum;
 	}
+}
+
+void CEvaluation::setWeightVector(WeightVector & wv) {
+	weight = wv;
 }
 
 
