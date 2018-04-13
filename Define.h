@@ -8,6 +8,8 @@
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
+
+/********** 棋盘参数 **********/
 #define NOCHESS 0
 #define BLACK   1
 #define RED     2
@@ -21,25 +23,44 @@
 #define IsRed(x) (x==2)
 #define IsSameSide(x,y) ((IsBlack(x)&&IsBlack(y))||(IsRed(x)&&IsRed(y)))
 
+/********** Evaluation参数 **********/
+#define USE_MAP
+//#define USE_INT_AS_BOARD_VALUE
+
 #define MAX_INT 0x7fffffff
 #define MIN_INT 0x80000000
 
 #define MAX_DOUBLE 100000.0
 #define MIN_DOUBLE (-MAX_DOUBLE)
 
-//#define USE_INT_AS_BOARD_VALUE
-
 #ifdef USE_INT_AS_BOARD_VALUE
-	typedef int BV_TYPE;
-	#define MAX_VALUE (MAX_INT)
-	#define MIN_VALUE (MIN_INT)
+typedef int BV_TYPE;
+#define MAX_VALUE (MAX_INT)
+#define MIN_VALUE (MIN_INT)
 #else
-	typedef double BV_TYPE;
-	#define MAX_VALUE (MAX_DOUBLE)
-	#define MIN_VALUE (MIN_DOUBLE)
+typedef double BV_TYPE;
+#define MAX_VALUE (MAX_DOUBLE)
+#define MIN_VALUE (MIN_DOUBLE)
 #endif
 
-typedef unsigned long long int ID_TYPE;
+typedef long long int ID_TYPE;
+
+/********** NegaScout参数 **********/
+//#define USE_MULTI_PROCESS
+#define USE_NEW_ABTREE
+
+#define PROC_DEPTH 1
+#define SEARCH_DEPTH 8
+
+#define AB_TREE 0
+#define PVS 1
+#define MTD_F 2
+#define MAX_MIN 3
+#define MIN_WIN 4
+
+#define THREAD_N 96
+
+/********** 其他参数 **********/
 
 const int arcLoop[2][24][2] = {
 	{   //内弧
@@ -100,5 +121,56 @@ typedef struct node{
 	int arc;//逆时钟有无弧
 	int color;//颜色
 }Node;
+
+typedef struct _task {
+	//棋盘信息
+	BYTE position[6][6];
+	bool isBlackTurn;
+	ID_TYPE boardId;
+	//控制变量
+	int searchDepth = SEARCH_DEPTH;
+	int useMethod = PVS;
+	//搜索信息
+	bool isBlackPlay = true;//一般都是我方走红
+	int depth = SEARCH_DEPTH - 1;
+	BV_TYPE alpha = MIN_VALUE;
+	BV_TYPE beta = MAX_VALUE;
+
+	/*	struct Task() {};
+	struct Task(Task &param) {
+	memcpy(position, param.position, sizeof(BYTE) * 36);
+	isBlackTurn = param.isBlackTurn;
+	isBlackPlay = param.isBlackPlay;
+	searchDepth = param.searchDepth;
+	alpha = param.alpha;
+	beta = param.beta;
+	boardId = param.boardId;
+	useMethod = param.useMethod;
+	}
+	struct Task(ChessBoard board, bool _isBlackPlay, int _depth, BV_TYPE _alpha, BV_TYPE _beta,ID_TYPE _boardId,
+	int _useMethod) {
+	board.getPosition(position);
+	isBlackTurn = board.getTurn();
+	isBlackPlay = _isBlackPlay;
+	searchDepth = _depth;
+	alpha = _alpha;
+	beta = _beta;
+	boardId = _boardId;
+	useMethod = _useMethod;
+	}
+	*/
+
+	void setCtrlParam(int sDepth, int method) {
+		searchDepth = sDepth;
+		useMethod = method;
+	}
+	void setSearchParam(int d, bool play, BV_TYPE a, BV_TYPE b) {
+		depth = d;
+		isBlackPlay = play;
+		alpha = a;
+		beta = b;
+	}
+
+} Task;
 
 #endif // !defined(AFX_DEFINE_H__315ABE2D_6AB8_4DBC_AE20_5EA359AC5B00__INCLUDED_)

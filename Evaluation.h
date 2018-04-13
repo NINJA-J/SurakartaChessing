@@ -49,6 +49,9 @@ typedef struct weightVector {
 	double posValue;
 	double numValue;//红方，黑方棋子数量
 	double arcValue;//占弧值
+
+	BV_TYPE delta;
+
 	weightVector() {};
 
 	weightVector(double p, double a, double m, double pos, double num, double arc) {
@@ -82,6 +85,7 @@ typedef struct weightVector {
 			posValue /= total;
 			numValue /= total;
 			arcValue /= total;
+			delta = 1.0 / total;
 		}
 		return *this;
 	}
@@ -112,13 +116,23 @@ public:
 	int GetArcValue(BYTE position[6][6], BOOL bIsBlackTurn);//用于计算占弧价值
 
 	bool getBoardValue(ID_TYPE id, int depth, BV_TYPE &value);
-	bool addBoardValue(ID_TYPE id, int depth, BV_TYPE value);
+	BV_TYPE addBoardValue(ID_TYPE id, int depth, BV_TYPE value);
 	int getArcValue(ChessBoard &board, bool isBlack);
+
+	void setWeightVector(WeightVector &wv);
+	BV_TYPE getValueDelta();
 
 private:
 	ValueVector bValue, rValue;
-	WeightVector weights[5];
-	unordered_map<ID_TYPE, valUnion> boardValue;
+	WeightVector weight = WeightVector(
+		1, //pWeight	- 保护权值
+		2, //aWeight	- 攻击权值
+		1, //mWeight	- 走子权值
+		1, //posWeight	- 位置权值
+		6, //numWeight	- 子力权值
+		5  //arcWeight	- 占弧权值
+	);
+	static unordered_map<ID_TYPE, valUnion> boardValue;
 
 	static const int posScore[3][6][6];
 };

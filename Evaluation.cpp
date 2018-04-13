@@ -18,6 +18,8 @@ static char THIS_FILE[] = __FILE__;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
+unordered_map<ID_TYPE, valUnion> CEvaluation::boardValue;
+
 BV_TYPE operator*(WeightVector weight, ValueVector value) {
 	double sum = 0;
 	sum += value.pValue * weight.pValue;
@@ -78,16 +80,8 @@ BV_TYPE CEvaluation::evaluate(ChessBoard &board, bool isBlackTurn) {
 	//4.尽量加一些其他估值方法
 
 	ValueVector values;
-	WeightVector weights(
-		1, //pWeight	- 保护权值
-		2, //aWeight	- 攻击权值
-		1, //mWeight	- 走子权值
-		1, //posWeight	- 位置权值
-		6, //numWeight	- 子力权值
-		5  //arcWeight	- 占弧权值
-	);
 
-	return  weights * analysis(board, isBlackTurn);
+	return  weight * analysis(board, isBlackTurn);
 }
 
 ValueVector CEvaluation::analysis(ChessBoard &board, bool isBlackTurn)
@@ -280,14 +274,19 @@ int CEvaluation::GetArcValue(BYTE position[6][6], BOOL IsBlackturn)
 }
 
 bool CEvaluation::getBoardValue(ID_TYPE id, int depth, BV_TYPE & value) {
+#ifdef USE_MAP
 	unordered_map<ID_TYPE, valUnion>::const_iterator iter = boardValue.find(id);
 	if (iter == boardValue.end()) return false;
 	if (iter->second.depth < depth)return false;
 	value = iter->second.value;
 	return true;
+#else
+	return false;
+#endif
 }
 
-bool CEvaluation::addBoardValue(ID_TYPE id, int depth, BV_TYPE value) {
+BV_TYPE CEvaluation::addBoardValue(ID_TYPE id, int depth, BV_TYPE value) {
+#ifdef USE_MAP
 	unordered_map<ID_TYPE, valUnion>::iterator iter = boardValue.find(id);
 	if (iter == boardValue.end())
 		boardValue.insert({ id,valUnion(depth,value) });
@@ -295,7 +294,8 @@ bool CEvaluation::addBoardValue(ID_TYPE id, int depth, BV_TYPE value) {
 		iter->second.depth = depth;
 		iter->second.value = value;
 	}
-	return true;
+#endif
+	return value;
 }
 
 int CEvaluation::getArcValue(ChessBoard &board, bool isBlack) {
@@ -351,6 +351,13 @@ int CEvaluation::getArcValue(ChessBoard &board, bool isBlack) {
 	else {
 		return RArcNum + NoArcNum;
 	}
+}
+
+void CEvaluation::setWeightVector(WeightVector & wv) {
+}
+
+BV_TYPE CEvaluation::getValueDelta() {
+	return weight.delta;
 }
 
 
