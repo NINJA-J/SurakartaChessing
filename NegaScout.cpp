@@ -100,6 +100,10 @@ void CNegaScout::setPosition(BYTE position[6][6], bool isBlackTurn) {
 	chessBoard.setChessPosition(position, isBlackTurn);
 }
 
+void CNegaScout::setSearchMethod(int sMethod, bool useMProcess) {
+	searchMethod = sMethod;
+}
+
 void CNegaScout::move(CHESSMOVE move) {
 	chessBoard.move(move);
 }
@@ -153,15 +157,15 @@ inline bool CNegaScout::negaScoutPrevTest(int depth, int &value) {
 	//叶节点直接评估
 	if (depth <= 0) {
 		value = m_pEval.addBoardValue(
-			chessBoard.getId(), 0, m_pEval.evaluate(chessBoard, isBlackPlay) * (SEARCH_DEPTH % 2 ? -1.0 : 1.0)
+			chessBoard.getId(), 0, m_pEval.evaluate(chessBoard, isBlackPlay)// * (SEARCH_DEPTH % 2 ? -1 : 1)
 		);
 		return true;
 	}
 	return false;
 }
 
-int CNegaScout::NegaScout_TT_HH(int depth,int num,bool isBlackPlay) {
-	double t;
+int CNegaScout::negaScoutMinMax(int depth,int num,bool isBlackPlay) {
+	int t;
 	int Count, i;
 	int side;
 	int best = -99999;
@@ -178,7 +182,7 @@ int CNegaScout::NegaScout_TT_HH(int depth,int num,bool isBlackPlay) {
 	for (i = 0; i < Count; i++) {
 		chessBoard.move(mList[i]);
 
-		t = -NegaScout_TT_HH(depth - 1, i, isBlackPlay);//递归调用
+		t = -negaScoutMinMax(depth - 1, i, isBlackPlay);//递归调用
 		if (t > best) {
 			best = t;
 			if(depth == m_nMaxDepth) bestMove = mList[i];//存储最优走法
@@ -190,16 +194,13 @@ int CNegaScout::NegaScout_TT_HH(int depth,int num,bool isBlackPlay) {
 
 int CNegaScout::negaScoutAlphaBeta(int depth, int alpha, int beta) {
 	CHESSMOVE moveList[200];
-	bool isMax = (m_nMaxDepth - depth) % 2 == 0;
-	int side = (m_nMaxDepth - depth + isBlackPlay) % 2;//当前层谁走子
-
-	int best = MIN_VALUE;
+	int value, best = MIN_VALUE;
 
 	if (negaScoutPrevTest(depth, best))return best;
+	int count = m_pMG.createPossibleMoves(chessBoard, moveList, 200);
+
 	if (useMultiProcess(depth))
 		std::runtime_error("Alpha Beta Multi-Process Undefined!!!");
-
-	int count = m_pMG.createPossibleMoves(chessBoard, moveList, 200);
 	/*
 	for (int i = 0; i < nextMoveCount; i++) {
         MakeMove(&m_pMG->m_MoveList[depth][i], whoTurn);
@@ -215,17 +216,18 @@ int CNegaScout::negaScoutAlphaBeta(int depth, int alpha, int beta) {
     }*/
 	for (int i = 0; i < count; i++) {
 		chessBoard.move(moveList[i]);
-		int score = -negaScoutAlphaBeta(depth - 1, -beta, -alpha);
+		value = -negaScoutAlphaBeta(depth - 1, -beta, -alpha);
 		chessBoard.unMove();
 
-		if (score > alpha) {
-			alpha = score;
+		best = max(best, value);
+		if (value > alpha) {
+			alpha = value;
 			if (depth == m_nMaxDepth)
 				bestMove = moveList[i];
+			if (alpha >= beta) return beta;
 		}
-		if (alpha >= beta) return beta;
 	}
-	return alpha;
+	return best;
 }
 
 int CNegaScout::negaScoutMinWin(int depth, int alpha, int beta) {
@@ -239,7 +241,7 @@ int CNegaScout::negaScoutMinWin(int depth, int alpha, int beta) {
 	if (m_pEval.getBoardValue(chessBoard.getId(), depth, best)) return best;
 	if (depth <= 0) 
 		return m_pEval.addBoardValue(
-			chessBoard.getId(), 0, m_pEval.evaluate(chessBoard, isBlackPlay) * (SEARCH_DEPTH % 2 ? -1.0 : 1.0)
+			chessBoard.getId(), 0, m_pEval.evaluate(chessBoard, isBlackPlay) * (SEARCH_DEPTH % 2 ? -1 : 1)
 		);
 
 	int count = m_pMG.createPossibleMoves(chessBoard, moveList, 200);
@@ -327,21 +329,11 @@ int CNegaScout::negaScoutPVS(int depth, int alpha, int beta) {
 					if (alpha >= beta)break
 				return alpha
 	*/
-	int value;
+	int value, best = MIN_VALUE;
 	if (negaScoutPrevTest(depth, value)) return value;
 
 	CHESSMOVE moveList[200];
 	int count = m_pMG.createPossibleMoves(chessBoard, moveList, 200);
-
-	chessBoard.move(moveList[0]);
-	value = -negaScoutPVS(depth - 1, -beta, -alpha);
-	chessBoard.unMove();
-
-	if (value > alpha) {
-		alpha = value;
-		if (depth == m_nMaxDepth) bestMove = moveList[0];
-	}
-	if (alpha >= beta) return beta;
 
 	if (useMultiProcess(depth)) {
 		std::runtime_error("PVS MultiProcess Undefined!!!");
@@ -355,25 +347,28 @@ int CNegaScout::negaScoutPVS(int depth, int alpha, int beta) {
 		}
 	} else {
 		//后面的节点在之前的基础上搜索
-		for (int i = 1; i < count; i++) {
+		for (int i = 0; i < count; i++) {
 			chessBoard.move(moveList[i]);
-			//这个负号是用的网上alpha beta剪枝的写法，好像大部分代码也这么写
-			value = -negaScoutPVS(depth - 1, -alpha - 1, -alpha);//零窗口搜索
-			if (alpha < value && value < beta)
-				value = -negaScoutPVS(depth - 1, -beta, -value);
+			if (i == 0) {
+				value = -negaScoutPVS(depth - 1, -beta, -alpha);
+			} else {
+				value = -negaScoutPVS(depth - 1, -alpha - 1, -alpha);//零窗口搜索
+				if (alpha < value && value < beta)
+					value = -negaScoutPVS(depth - 1, -beta, -value);
+			}
 
 			chessBoard.unMove();
 			//更新alpha和beta并判断剪枝
+			best = max(best, value);
 			if (value > alpha) {
 				alpha = value;
 				if (depth == m_nMaxDepth) bestMove = moveList[i];
-				if (alpha >= beta) return beta;
+				if (alpha >= beta) break;
 			}
-
 		}
 	}
 	
-	return m_pEval.addBoardValue(chessBoard.getId(), 0, alpha);
+	return m_pEval.addBoardValue(chessBoard.getId(), 0, best);
 }
 
 int CNegaScout::isGameOver() {//未结束返回0，结束返回极大/极小值

@@ -34,11 +34,11 @@
 #define MIN_DOUBLE (-MAX_DOUBLE)
 
 #ifdef USE_INT_AS_BOARD_VALUE
-typedef	int BV_TYPE;
+//typedef	int BV_TYPE;
 #define MAX_VALUE (MAX_INT)
 #define MIN_VALUE (MIN_INT)
 #else
-typedef double BV_TYPE;
+//typedef double BV_TYPE;
 #define MAX_VALUE (MAX_DOUBLE)
 #define MIN_VALUE (MIN_DOUBLE)
 #endif

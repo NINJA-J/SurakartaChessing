@@ -34,6 +34,7 @@ public:
 
 	void setPosition(BYTE position[6][6], bool isBlackTurn);
 	void setPlayerSide(bool isBlackPlay) { this->isBlackPlay = isBlackPlay; };
+	void setSearchMethod(int sMethod, bool useMProcess);
 	void move(CHESSMOVE move);
 
 	Task createTask();
@@ -44,7 +45,7 @@ public:
 
 	inline int negaScoutSearch(Task &t);
 	inline bool negaScoutPrevTest(int depth, int &value);
-	int NegaScout_TT_HH(int depth,int num,bool isBlackPlay);
+	int negaScoutMinMax(int depth,int num,bool isBlackPlay);
 	int negaScoutAlphaBeta(int depth = SEARCH_DEPTH, int alpha = MIN_VALUE, int beta = MAX_VALUE);
 	int negaScoutMinWin(int depth = SEARCH_DEPTH, int alpha = MIN_VALUE, int beta = MAX_VALUE);
 	int negaScoutPVS(int depth = SEARCH_DEPTH, int alpha = MIN_VALUE, int beta = MAX_VALUE);

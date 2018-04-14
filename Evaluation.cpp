@@ -142,7 +142,7 @@ ValueVector CEvaluation::analysis(ChessBoard &board, bool isBlackPlay)
 	bVal.numValue = board.getNums(B_PLAYING);
 	rVal.numValue = board.getNums(R_PLAYING);
 
-	return board.getTurn() != isBlackPlay ? bVal - rVal : rVal - bVal;
+	return board.getTurn() == isBlackPlay ? bVal - rVal : rVal - bVal;
 }
 
 ValueVector CEvaluation::analysisOld(ChessBoard & board, bool isBlackTurn) {

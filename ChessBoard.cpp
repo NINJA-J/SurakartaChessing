@@ -66,7 +66,7 @@ void ChessBoard::printBoard(char* board, char noChess, char black, char red) {
 		str += "\n";
 	}
 	str += "\0";
-	if (board) strcpy(board, str.c_str());
+	if (board) memcpy(board, str.c_str(),sizeof(char)*str.length());
 }
 
 bool ChessBoard::setTurn(bool isBlackTurn) {
