@@ -8,6 +8,7 @@
 #include "Define.h"
 
 #include <queue>
+#include <ctime>
 
 #include <atomic>
 #include <thread>
@@ -27,14 +28,10 @@ ThreadPool threadPool(THREAD_N);
 // Construction/Destruction
 ///////////////////// /////////////////////////////////////////////////
 
-/* 在构造函数中加入输出语句后发现程序每一帧都会析构NegaScout和创建新的NegaScout，因此线程池的创建采用单次创建方式
- * 用静态的bool变量存储是否创建过线程池，析构时判断若创建过则进行析构操作
- * 线程的中止方式可见threadMain函数，采用无任务自动跳出循环的方式，即将任务清空（析构是一般都是这样）后notify_all
- */
 CNegaScout::CNegaScout(){
 }
 
-CNegaScout::CNegaScout(Task & t):chessBoard(t) {
+CNegaScout::CNegaScout(Task & t):chessBoard(t.position,t.isBlackTurn,t.boardId) {
 	/*		棋盘信息 -- 这个部分在ChessBoard中初始化了
 	*	BYTE position[6][6];	used
 	*	bool isBlackTurn;		used
@@ -48,30 +45,26 @@ CNegaScout::CNegaScout(Task & t):chessBoard(t) {
 	*	int alpha;			use in negaScout***
 	*	int beta;			use in negaScout***
 	*/
-	m_nMaxDepth = m_nSearchDepth = t.searchDepth;
+	searchDepth = m_nMaxDepth = m_nSearchDepth = t.searchDepth;
 	isBlackPlay = t.isBlackPlay;
 }
 
-CNegaScout::CNegaScout(bool isBlackTurn):chessBoard(isBlackTurn) {
-}
+CNegaScout::CNegaScout(bool isBlackTurn):chessBoard(isBlackTurn) { }
 
-CNegaScout::CNegaScout(BYTE position[6][6], bool isBlackTurn):chessBoard(position,isBlackTurn) {
-}
+CNegaScout::CNegaScout(BYTE position[6][6], bool isBlackTurn):chessBoard(position,isBlackTurn) { }
 
 CNegaScout::CNegaScout(BYTE position[6][6], bool isBlackTurn, CHESSMOVE move):chessBoard(position, isBlackTurn) {
 	chessBoard.move(move);
 }
 
-CNegaScout::~CNegaScout() {
-}
+CNegaScout::~CNegaScout() { }
 
 CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6], bool m_isPlayerBlack) {
-
 	int score;
 
 	chessBoard.setChessPosition(position, m_isPlayerBlack);
 	isBlackPlay = m_isPlayerBlack;
-	m_nMaxDepth = SEARCH_DEPTH;
+	searchDepth = m_nMaxDepth = SEARCH_DEPTH;
 
 /*	目前MinWin的多线程可运行，PVS单线程可运行，并且加入了MAP功能
  *	若要打开多线程功能，在Define.h中取消USE_MULTI_PROCESS的注释
@@ -79,9 +72,11 @@ CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6], bool m_isPlayerBlack)
 
  *	主要参数设置都在Define.h中
  */
+	clock_t startTime = clock();
 //	score = negaScoutMinWin(SEARCH_DEPTH);
 //	score = negaScoutAlphaBeta(SEARCH_DEPTH);
-	score = negaScoutPVS(SEARCH_DEPTH);
+	score = negaScoutPVS(searchDepth);
+	clock_t runTime = clock() - startTime;
 
 	memcpy(CurPosition, position, sizeof(BYTE) * 36);
 	MakeMove(&bestMove);
@@ -89,7 +84,7 @@ CHESSMOVE CNegaScout::SearchAGoodMove(BYTE position[6][6], bool m_isPlayerBlack)
 
 	CString temp;
 	temp.Format(
-		"走法：(%d,%d)->(%d,%d)\n分数：%d",
+		"运行时间：%.2f\n走法：(%d,%d)->(%d,%d)\n分数：%d", (double)runTime / CLOCKS_PER_SEC,
 		bestMove.From.x, bestMove.From.y, bestMove.To.x, bestMove.To.y, score
 	);
 	AfxMessageBox(temp);
@@ -100,29 +95,8 @@ void CNegaScout::setPosition(BYTE position[6][6], bool isBlackTurn) {
 	chessBoard.setChessPosition(position, isBlackTurn);
 }
 
-void CNegaScout::setSearchMethod(int sMethod, bool useMProcess) {
-	searchMethod = sMethod;
-}
-
-void CNegaScout::move(CHESSMOVE move) {
-	chessBoard.move(move);
-}
-
 Task CNegaScout::createTask() {
 	Task t;
-/*		棋盘信息
- *	BYTE position[6][6];
- *	bool isBlackTurn;
- *	ID_TYPE boardId;
- *		控制变量
- *	int searchDepth;
- *	int useMethod;
- *		搜索信息
- *	int depth;
- *	bool isBlackPlay;
- *	int alpha;
- *	int beta;
- */
 	chessBoard.getPosition(t.position);
 	t.isBlackTurn = chessBoard.getTurn();
 	t.isBlackPlay = isBlackPlay;
@@ -133,7 +107,7 @@ Task CNegaScout::createTask() {
 
 bool CNegaScout::useMultiProcess(int depth) {
 #ifdef USE_MULTI_PROCESS
-	return SEARCH_DEPTH - depth <= PROC_DEPTH;
+	return searchDepth - depth < PROC_DEPTH;
 #else
 	return false;
 #endif
@@ -141,23 +115,24 @@ bool CNegaScout::useMultiProcess(int depth) {
 
 inline int CNegaScout::negaScoutSearch(Task &t) {
 	switch (t.useMethod) {
-	case PVS:		return negaScoutPVS(t.depth, t.alpha, t.beta);
-	case MIN_WIN:	return negaScoutMinWin(t.depth, t.alpha, t.beta);
-	case AB_TREE:	return negaScoutAlphaBeta(t.depth, t.alpha, t.beta);
+	case PVS:		return -negaScoutPVS(t.depth, -t.beta, -t.alpha);
+	case MIN_WIN:	return -negaScoutMinWin(t.depth, -t.beta, -t.alpha);
+	case AB_TREE:	return -negaScoutAlphaBeta(t.depth, -t.beta, -t.alpha);
 	case MTD_F:		return 0;
+	case ZERO_WIN:	return -negaScoutAlphaBeta(t.depth, -t.alpha-1, -t.alpha);
 	default:		return MIN_VALUE;
 	}
 	return MIN_VALUE;
 }
 
-inline bool CNegaScout::negaScoutPrevTest(int depth, int &value) {
-	if (int i = isGameOver()) { value = i; return true; }
-	//判断已有更好或等同的评估值
-	if (m_pEval.getBoardValue(chessBoard.getId(), depth, value)) { return true; }
-	//叶节点直接评估
+inline bool CNegaScout::negaScoutPrevTest(int depth,int &alpha,int &beta, int &value) {
+	if (value = isGameOver())
+		return true;
+	if (m_pEval.getBoardValue(chessBoard.getId(), depth, alpha, beta, value))
+		return true;
 	if (depth <= 0) {
 		value = m_pEval.addBoardValue(
-			chessBoard.getId(), 0, m_pEval.evaluate(chessBoard, isBlackPlay)// * (SEARCH_DEPTH % 2 ? -1 : 1)
+			chessBoard.getId(), 0, alpha, beta, m_pEval.evaluate(chessBoard, isBlackPlay)
 		);
 		return true;
 	}
@@ -196,24 +171,11 @@ int CNegaScout::negaScoutAlphaBeta(int depth, int alpha, int beta) {
 	CHESSMOVE moveList[200];
 	int value, best = MIN_VALUE;
 
-	if (negaScoutPrevTest(depth, best))return best;
-	int count = m_pMG.createPossibleMoves(chessBoard, moveList, 200);
+	if (negaScoutPrevTest(depth, alpha, beta, value))return value;
 
-	if (useMultiProcess(depth))
-		std::runtime_error("Alpha Beta Multi-Process Undefined!!!");
-	/*
-	for (int i = 0; i < nextMoveCount; i++) {
-        MakeMove(&m_pMG->m_MoveList[depth][i], whoTurn);
-        score = -alphabeta(depth - 1, -beta, -alpha);
-        UnMakeMove(&m_pMG->m_MoveList[depth][i]);
-        if (score>alpha) {
-            alpha = score;
-            if (depth == m_nMaxDepth){
-                m_cmBestMove = m_pMG->m_MoveList[depth][i];
-            }
-        }
-        if (alpha >= beta)break;
-    }*/
+	int count = m_pMG.createPossibleMoves(chessBoard, moveList, 200);
+	int aOrigin = alpha, bOrigin = beta;
+
 	for (int i = 0; i < count; i++) {
 		chessBoard.move(moveList[i]);
 		value = -negaScoutAlphaBeta(depth - 1, -beta, -alpha);
@@ -222,12 +184,11 @@ int CNegaScout::negaScoutAlphaBeta(int depth, int alpha, int beta) {
 		best = max(best, value);
 		if (value > alpha) {
 			alpha = value;
-			if (depth == m_nMaxDepth)
-				bestMove = moveList[i];
-			if (alpha >= beta) return beta;
+			if (depth == m_nMaxDepth) bestMove = moveList[i];
+			if (alpha >= beta) break;
 		}
 	}
-	return best;
+	return m_pEval.addBoardValue(chessBoard.getId(), depth, aOrigin, bOrigin, best);
 }
 
 int CNegaScout::negaScoutMinWin(int depth, int alpha, int beta) {
@@ -238,10 +199,10 @@ int CNegaScout::negaScoutMinWin(int depth, int alpha, int beta) {
 	int best = isMax ? MIN_VALUE : MAX_VALUE;//初始化搜索的估值的最值
 
 	if (int i = isGameOver(chessBoard)) return i;//终局
-	if (m_pEval.getBoardValue(chessBoard.getId(), depth, best)) return best;
-	if (depth <= 0) 
+	if (m_pEval.getBoardValue(chessBoard.getId(), depth, alpha, beta, best)) return best;
+	if (depth <= 0)
 		return m_pEval.addBoardValue(
-			chessBoard.getId(), 0, m_pEval.evaluate(chessBoard, isBlackPlay) * (SEARCH_DEPTH % 2 ? -1 : 1)
+			chessBoard.getId(), alpha, beta, 0, m_pEval.evaluate(chessBoard, isBlackPlay)
 		);
 
 	int count = m_pMG.createPossibleMoves(chessBoard, moveList, 200);
@@ -253,7 +214,7 @@ int CNegaScout::negaScoutMinWin(int depth, int alpha, int beta) {
 			chessBoard.move(moveList[i]);
 
 			Task t = createTask();
-			t.setCtrlParam(SEARCH_DEPTH, MIN_WIN);
+			t.setCtrlParam(searchDepth, MIN_WIN);
 			t.setSearchParam(depth - 1, isBlackPlay, MIN_VALUE, MAX_VALUE);
 
 			results.emplace_back(
@@ -277,26 +238,26 @@ int CNegaScout::negaScoutMinWin(int depth, int alpha, int beta) {
 	} else {
 		for (int i = 0; i < count; i++) {
 			chessBoard.move(moveList[i]);
-			int t = isMax ?
-				negaScoutMinWin(depth - 1, best, MAX_VALUE) :
-				negaScoutMinWin(depth - 1, MIN_VALUE, best);
+			int t = negaScoutMinWin(depth - 1, alpha, beta);
 			chessBoard.unMove();
 
 			if (isMax) {
 				if (best < t) { //获得更大的估值
-					alpha = best = t; //更新最值和alpha
-					if (depth == m_nMaxDepth) {
-						bestMove = moveList[i];
-					}
+					best = t;
+					alpha = max(alpha, best);
+					if (depth == m_nMaxDepth) bestMove = moveList[i];
+					if (alpha > beta) break; //无法使上层变小，剪枝
 				}
-				if (t > beta) return best; //无法使上层变小，剪枝
-			}
-			else {
-				if (best > t) beta = best = t;
-				if (t < alpha) return best;
+			} else {
+				if (best > t) {
+					best = t;
+					beta = min(beta, best);
+					if (t < alpha) break;
+				}
+				
 			}
 		}
-		return m_pEval.addBoardValue(chessBoard.getId(), depth, best);//返回最值
+		return m_pEval.addBoardValue(chessBoard.getId(), depth, alpha, beta, best);//返回最值
 	}
 }
 
@@ -330,20 +291,87 @@ int CNegaScout::negaScoutPVS(int depth, int alpha, int beta) {
 				return alpha
 	*/
 	int value, best = MIN_VALUE;
-	if (negaScoutPrevTest(depth, value)) return value;
+	if (negaScoutPrevTest(depth, alpha, beta, value))return value;
 
+	int aOrigin = alpha, bOrigin = beta;
 	CHESSMOVE moveList[200];
 	int count = m_pMG.createPossibleMoves(chessBoard, moveList, 200);
 
 	if (useMultiProcess(depth)) {
-		std::runtime_error("PVS MultiProcess Undefined!!!");
-		vector<future<int>> results;
+		ThreadStatus status[96];
+		Task tasks[96];
+		future<int> results[96];
 
-		for (int i = 1; i < count; i++) {
+		int maxThreads = 5,i;
+		int runningThreads = 0;
+		int lastThreads = count - 1;
+		bool hasSpace = false,pruned = false;
+
+		chessBoard.move(moveList[0]);
+		int value = -negaScoutPVS(depth - 1, -beta, -alpha);
+		chessBoard.unMove();
+
+		best = max(best, value);
+		if (value > alpha) {
+			alpha = value;
+			if (depth == m_nMaxDepth) bestMove = moveList[0];
+			if (alpha >= beta) pruned = true;
+		}
+
+		for (i = 1; i < count; i++) {
 			chessBoard.move(moveList[i]);
-			Task t = createTask();
-			t.setCtrlParam(SEARCH_DEPTH, PVS);
-			t.setSearchParam(depth - 1, isBlackPlay, alpha, beta);
+			tasks[i] = createTask();
+			chessBoard.unMove();
+			status[i] = ready;
+		}
+
+		i = 1;
+		while(lastThreads&&!pruned){
+			hasSpace = false;
+			if (status[i] == zeroWin || status[i] == running) {//当前线程正在计算
+				if (results[i].wait_for(chrono::milliseconds(5)) == future_status::ready) {//判断当前线程是否计算结束
+					int val = results[i].get();
+					runningThreads--;//运行线程数量减一
+
+					best = max(val, best);
+					if (val > alpha) {
+						alpha = val;
+						if (depth == searchDepth) bestMove = moveList[i];
+						if (alpha >= beta) pruned = true;
+					}
+
+					if (val < alpha||status[i]==running) {
+						status[i] = finished;
+						lastThreads--;
+					}
+					else
+						hasSpace = true;
+				}
+			}
+			else if (status[i] == ready&&runningThreads < maxThreads)//当前线程未开始计算，且有空间进行计算
+				hasSpace = true;
+
+			if (hasSpace&&!pruned) {
+				runningThreads++;
+				tasks[i].setSearchParam(depth - 1, isBlackPlay, alpha, beta);
+				if (status[i] == ready) {
+					tasks[i].setCtrlParam(searchDepth, ZERO_WIN);
+					results[i] = threadPool.enqueue([i](Task t) {
+						CNegaScout negaScout(t);
+						return negaScout.negaScoutSearch(t);
+					}, tasks[i]);
+					status[i] = zeroWin;
+				}
+				else if (status[i] == zeroWin) {
+					tasks[i].setCtrlParam(searchDepth, PVS);
+					results[i] = threadPool.enqueue([i](Task t) {
+						CNegaScout negaScout(t);
+						return negaScout.negaScoutSearch(t);
+					}, tasks[i]);
+					status[i] = running;
+				}
+			}
+			if (++i == count) i = 1;
 		}
 	} else {
 		//后面的节点在之前的基础上搜索
@@ -356,27 +384,36 @@ int CNegaScout::negaScoutPVS(int depth, int alpha, int beta) {
 				if (alpha < value && value < beta)
 					value = -negaScoutPVS(depth - 1, -beta, -value);
 			}
-
 			chessBoard.unMove();
+
 			//更新alpha和beta并判断剪枝
-			best = max(best, value);
+			if (value > best) {
+				if (depth == searchDepth)bestMove = moveList[i];
+				best = value;
+			}
 			if (value > alpha) {
 				alpha = value;
-				if (depth == m_nMaxDepth) bestMove = moveList[i];
 				if (alpha >= beta) break;
 			}
 		}
 	}
 	
-	return m_pEval.addBoardValue(chessBoard.getId(), 0, best);
+	return m_pEval.addBoardValue(chessBoard.getId(), depth, aOrigin, bOrigin, best);
+}
+
+int CNegaScout::negaScoutBT(int depth, int alpha, int beta) {
+	return 0;
+}
+
+int CNegaScout::negaScoutMTD(int depth, int alpha, int beta) {
+	return 0;
 }
 
 int CNegaScout::isGameOver() {//未结束返回0，结束返回极大/极小值
-	if (int type = chessBoard.isGameOver()) {
+	if (BYTE winner = chessBoard.isGameOver()) {
 		int score = MAX_INT - chessBoard.getMoves() - 1;
-		return ((type == B_WIN) ^ isBlackPlay) ? -score : score; //异或
-	}
-	else
+		return /*((winner == BLACK) ^ chessBoard.getTurn()) ? */-score /*: score*/; //异或
+	} else
 		return 0;
 }
 

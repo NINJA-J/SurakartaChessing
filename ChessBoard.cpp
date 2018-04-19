@@ -9,14 +9,9 @@ void ChessBoard::initId() {
 	rawId = 0;
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
-			rawId += idList[i][j][BLACK] + idList[i][j][position[i][j]];
+			rawId += idList[i][j][position[i][j]];
 		}
 	}
-}
-
-ChessBoard::ChessBoard(Task & t) {
-	setChessPosition(t.position, t.isBlackTurn);
-	rawId = t.boardId;
 }
 
 ChessBoard::ChessBoard(bool isBlackFirst) {
@@ -27,6 +22,11 @@ ChessBoard::ChessBoard(bool isBlackFirst) {
 ChessBoard::ChessBoard(BYTE position[6][6], bool isBlackFirst) {
 	setChessPosition(position,isBlackFirst);
 	initId();
+}
+
+ChessBoard::ChessBoard(BYTE position[6][6], bool isBlackFirst, ID_TYPE boardId) {
+	setChessPosition(position, isBlackFirst);
+	rawId = boardId;
 }
 
 ChessBoard::ChessBoard(ChessBoard & copy) {
@@ -163,6 +163,7 @@ void ChessBoard::unMove() {
 }
 
 ID_TYPE ChessBoard::getId() {
+	if (rawId < 0)AfxMessageBox("id为负");
 	return isBlackTurn ? getIdRaw() | SIG_BLACK : getIdRaw();
 }
 
@@ -188,7 +189,7 @@ int ChessBoard::getMoves() {
 int ChessBoard::isGameOver() {
 	if (bNum&&rNum)
 		return 0;
-	return bNum ? B_WIN : R_WIN;
+	return bNum ? BLACK : RED;
 }
 
 int ChessBoard::getNums(bool isBlack) {

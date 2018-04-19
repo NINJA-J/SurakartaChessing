@@ -13,6 +13,7 @@
 #include "ChessBoard.h"
 #include <unordered_map>
 #include "Define.h"
+#include <mutex>
 
 typedef struct valueVector {
 	int pValue;
@@ -88,15 +89,37 @@ typedef struct weightVector {
 	}
 }WeightVector;
 
+typedef enum valStatus {
+	fail_low,
+	fail_high,
+	succ
+}ValStatus;
+
+typedef enum rtnStatus {
+	notFound,
+	lowDepth,
+	qualified,
+	newRange
+}RtnStatus;
+
 int operator*(ValueVector value, WeightVector weight);
 
 int operator*(WeightVector weight, ValueVector value);
 
-class valUnion {
+struct valUnion {
 public:
 	int depth;
+	int alpha;
+	int beta;
 	int value;
-	valUnion(int d, int v) :depth(d), value(v) {};
+	ValStatus status;
+	valUnion(const valUnion & vu) :depth(vu.depth), alpha(vu.alpha), beta(vu.beta), value(vu.value),status(vu.status) { }
+
+	valUnion(int d, int a, int b, int v) :depth(d), alpha(a), beta(b), value(v) {
+		if (v < alpha) status = fail_low;
+		else if (v >= beta)status = fail_high;
+		else status = succ;
+	};
 	valUnion() {};
 };
 
@@ -112,8 +135,8 @@ public:
 	//void GetAttackInfo(BYTE position[6][6]);
 	int GetArcValue(BYTE position[6][6], BOOL bIsBlackTurn);//用于计算占弧价值
 
-	bool getBoardValue(ID_TYPE id, int depth, int &value);
-	int addBoardValue(ID_TYPE id, int depth, int value);
+	bool getBoardValue(ID_TYPE id, int depth, int &alpha, int &beta, int &value);
+	int addBoardValue(ID_TYPE id, int depth, int alpha, int beta, int value);
 	int getArcValue(ChessBoard &board, bool isBlack);
 
 	void setWeightVector(WeightVector &wv);
@@ -129,6 +152,7 @@ private:
 		5  //arcWeight	- 占弧权值
 	);
 	static unordered_map<ID_TYPE, valUnion> boardValue;
+	static mutex mapMutex;
 
 	static const int posScore[3][6][6];
 };

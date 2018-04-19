@@ -6,6 +6,12 @@
 #include "Surakarta.h"
 #include "Evaluation.h"
 #include <cstdlib>
+#include <atomic>
+#include <thread>
+#include <future>
+#include <mutex>
+#include <condition_variable>
+
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
@@ -13,12 +19,14 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 #define USE_NEW_ANALYSIS
+#define USE_OLD_MAP_SEARCH
 
 //////////////////////////////////////////////////////////////////////6
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 unordered_map<ID_TYPE, valUnion> CEvaluation::boardValue;
+mutex CEvaluation::mapMutex;
 
 int operator*(WeightVector weight, ValueVector value) {
 	int sum = 0;
@@ -142,7 +150,7 @@ ValueVector CEvaluation::analysis(ChessBoard &board, bool isBlackPlay)
 	bVal.numValue = board.getNums(B_PLAYING);
 	rVal.numValue = board.getNums(R_PLAYING);
 
-	return board.getTurn() == isBlackPlay ? bVal - rVal : rVal - bVal;
+	return board.getTurn() ? bVal - rVal : rVal - bVal;
 }
 
 ValueVector CEvaluation::analysisOld(ChessBoard & board, bool isBlackTurn) {
@@ -243,25 +251,40 @@ int CEvaluation::GetArcValue(BYTE position[6][6], BOOL IsBlackturn)
 	}
 }
 
-bool CEvaluation::getBoardValue(ID_TYPE id, int depth, int & value) {
+bool CEvaluation::getBoardValue(ID_TYPE id, int depth, int &alpha, int &beta, int & value) {
 #ifdef USE_MAP
+#ifdef USE_MULTI_PROCESS
+	unique_lock<mutex> lock(mapMutex);
+#endif
 	unordered_map<ID_TYPE, valUnion>::const_iterator iter = boardValue.find(id);
 	if (iter == boardValue.end()) return false;
-	if (iter->second.depth < depth)return false;
-	value = iter->second.value;
-	return true;
+	if (iter->second.depth < depth) return false;
+	if (iter->second.value > beta) {
+		alpha = beta - 1;
+		return false;
+	} else if (iter->second.value > alpha) {
+		alpha = iter->second.value;
+		return false;
+	}else{
+		return false;
+	}
 #else
 	return false;
 #endif
 }
 
-int CEvaluation::addBoardValue(ID_TYPE id, int depth, int value) {
+int CEvaluation::addBoardValue(ID_TYPE id, int depth,int alpha,int beta, int value) {
 #ifdef USE_MAP
+#ifdef USE_MULTI_PROCESS
+	unique_lock<mutex> lock(mapMutex);
+#endif
 	unordered_map<ID_TYPE, valUnion>::iterator iter = boardValue.find(id);
 	if (iter == boardValue.end())
-		boardValue.insert({ id,valUnion(depth,value) });
+		boardValue.insert({ id,valUnion(depth,alpha,beta,value) });
 	else {
 		iter->second.depth = depth;
+		iter->second.alpha = alpha;
+		iter->second.beta = beta;
 		iter->second.value = value;
 	}
 #endif

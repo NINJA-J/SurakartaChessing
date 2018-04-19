@@ -43,6 +43,11 @@
 #define MIN_VALUE (MIN_DOUBLE)
 #endif
 
+#define NOT_FOUND 0
+#define LOW_DEPTH 1
+#define QUALIFED 2
+#define NEW_RANGE 3
+
 typedef long long int ID_TYPE;
 
 /********** NegaScout参数 **********/
@@ -50,13 +55,14 @@ typedef long long int ID_TYPE;
 #define USE_NEW_ABTREE
 
 #define PROC_DEPTH 1
-#define SEARCH_DEPTH 8
+#define SEARCH_DEPTH 7
 
 #define AB_TREE 0
 #define PVS 1
 #define MTD_F 2
 #define MAX_MIN 3
 #define MIN_WIN 4
+#define ZERO_WIN 5
 
 #define THREAD_N 96
 
@@ -121,56 +127,5 @@ typedef struct node{
 	int arc;//逆时钟有无弧
 	int color;//颜色
 }Node;
-
-typedef struct _task {
-	//棋盘信息
-	BYTE position[6][6];
-	bool isBlackTurn;
-	ID_TYPE boardId;
-	//控制变量
-	int searchDepth = SEARCH_DEPTH;
-	int useMethod = PVS;
-	//搜索信息
-	bool isBlackPlay = true;//一般都是我方走红
-	int depth = SEARCH_DEPTH - 1;
-	int alpha = MIN_VALUE;
-	int beta = MAX_VALUE;
-
-	/*	struct Task() {};
-	struct Task(Task &param) {
-	memcpy(position, param.position, sizeof(BYTE) * 36);
-	isBlackTurn = param.isBlackTurn;
-	isBlackPlay = param.isBlackPlay;
-	searchDepth = param.searchDepth;
-	alpha = param.alpha;
-	beta = param.beta;
-	boardId = param.boardId;
-	useMethod = param.useMethod;
-	}
-	struct Task(ChessBoard board, bool _isBlackPlay, int _depth, int _alpha, int _beta,ID_TYPE _boardId,
-	int _useMethod) {
-	board.getPosition(position);
-	isBlackTurn = board.getTurn();
-	isBlackPlay = _isBlackPlay;
-	searchDepth = _depth;
-	alpha = _alpha;
-	beta = _beta;
-	boardId = _boardId;
-	useMethod = _useMethod;
-	}
-	*/
-
-	void setCtrlParam(int sDepth, int method) {
-		searchDepth = sDepth;
-		useMethod = method;
-	}
-	void setSearchParam(int d, bool play, int a, int b) {
-		depth = d;
-		isBlackPlay = play;
-		alpha = a;
-		beta = b;
-	}
-
-} Task;
 
 #endif // !defined(AFX_DEFINE_H__315ABE2D_6AB8_4DBC_AE20_5EA359AC5B00__INCLUDED_)
