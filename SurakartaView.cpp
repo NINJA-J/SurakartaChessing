@@ -8,7 +8,7 @@
 #include "SurakartaView.h"
 #include "NewGame.h"
 #include "Define.h"
-#include "Eveluation.h"
+#include "Evaluation.h"
 #include "MoveGenerator.h"
 #include "SearchEngine.h"
 #include "NegaScout.h"
@@ -78,10 +78,10 @@ CSurakartaView::CSurakartaView()
 	
 	memcpy(m_ChessBoard,InitChessBoard,36);//初始化棋盘
 	CMoveGenerator *pMG;
-	CEveluation *pEvel;
-	m_pSE=new CNegaScout;//
-	pMG=new CMoveGenerator;
-	pEvel=new CEveluation;
+	CEvaluation *pEvel;
+	m_pSE = new CNegaScout;//
+	pMG = new CMoveGenerator;
+	pEvel = new CEvaluation;
 	
 	m_pSE->SetSearchDepth(4);//设定搜索层数
 	m_pSE->SetMoveGenerator(pMG);//给搜索引擎设定走法产生器
@@ -314,7 +314,7 @@ void CSurakartaView::OnSet()
 {
 	// TODO: Add your command handler code here
 	CMoveGenerator *pMG;
-	CEveluation *pEvel;
+	CEvaluation *pEvel;
 	CNewGame newGameDlg;
 	
 	if (newGameDlg.DoModal()==IDOK)
@@ -331,7 +331,7 @@ void CSurakartaView::OnSet()
 			break;
 		}
 		m_pSE->SetSearchDepth(newGameDlg.GetSelectedPly());
-		pEvel=new CEveluation;
+		pEvel=new CEvaluation;
 		
 	}
 	else
