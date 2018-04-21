@@ -19,7 +19,7 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
-
+//#define COMPUTER_COMPUTER
 /////////////////////////////////////////////////////////////////////////////
 // CSurakartaView
 
@@ -250,14 +250,29 @@ void CSurakartaView::OnBegin()
 		DrawChess(color);
 		if (dlg.m_computer==0)
 		{
-			m_isPlayerFirst=FALSE;
-			m_isPlayerTurn=FALSE;
+			m_isPlayerFirst = FALSE;
+			m_isPlayerTurn = FALSE;
+			#ifdef COMPUTER_COMPUTER
+			isBlackTurn(1);
+			#else
 			OnLButtonUp(1,CPoint(0,0));
+			#endif // COMPUTER_COMPUTER
+
 		}
 		else if(dlg.m_computer==1)
 		{
+			#ifdef COMPUTER_COMPUTER
+			m_isPlayerFirst = FALSE;
+			m_isPlayerTurn = FALSE;
+			isRedTurn(1);
+			#else
 			m_isPlayerFirst=TRUE;
 			m_isPlayerTurn=TRUE;
+			#endif
+			
+			
+			
+			
 		}
 		else
 			AfxMessageBox("请选择谁先下棋！");
@@ -392,249 +407,384 @@ void CSurakartaView::Inverse(BYTE color[][6])
 			if(color[i][j]==1 || color[i][j]==2)
 				color[i][j]=3-color[i][j];
 }
-
-
-
-void CSurakartaView::OnLButtonDown(UINT nFlags, CPoint point) 
+#ifdef COMPUTER_COMPUTER
+void CSurakartaView::OnLButtonDown(UINT nFlags, CPoint point){}
+#else
+void CSurakartaView::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: Add your message handler code here and/or call default
-	int i,j,flag=0;	
-	if(m_begin==TRUE &&m_isPlayerTurn  ||GameMode){	
-	CDC *pDC=GetDC();
-	CDC dc;
-	CBitmap bitmap;
+	int i, j, flag = 0;
+	if (m_begin == TRUE &&m_isPlayerTurn || GameMode) {
+		CDC *pDC = GetDC();
+		CDC dc;
+		CBitmap bitmap;
 
-	if(m_nMouseStep%2==1)
-	{
-		m_StarPoint=point;
-		for ( i=75;i<375;i=i+50)
+		if (m_nMouseStep % 2 == 1)
 		{
-			if (m_StarPoint.x>i&&m_StarPoint.x<i+50)
-			{	
-				Star_X=i+1;
-				Star_j=(i-75)/50;//起点数组纵坐标
+			m_StarPoint = point;
+			for (i = 75; i<375; i = i + 50)
+			{
+				if (m_StarPoint.x>i&&m_StarPoint.x<i + 50)
+				{
+					Star_X = i + 1;
+					Star_j = (i - 75) / 50;//起点数组纵坐标
+				}
 			}
+			for (i = 75; i<375; i = i + 50)
+			{
+				if (m_StarPoint.y>i&&m_StarPoint.y<i + 50)
+				{
+					Star_Y = i + 1;
+					Star_i = (i - 75) / 50;//
+				}
+			}//保存起始位置
+
+			{
+				if (color[Star_i][Star_j] == 1 && m_isPlayerBlack)
+				{
+					bitmap.LoadBitmap(IDB_BITMAP5);
+					dc.CreateCompatibleDC(pDC);
+					dc.SelectObject(&bitmap);
+					pDC->BitBlt(Star_X, Star_Y, Star_X + 50, Star_Y + 50, &dc, 0, 0, SRCCOPY);
+					dc.DeleteDC();
+					bitmap.DeleteObject();
+
+					memcpy(m_BackupChessBoard, color, 36);
+					BackStep = m_nMouseStep;
+					m_nMouseStep++;
+				}
+				if (color[Star_i][Star_j] == 2 && !m_isPlayerBlack)
+				{
+					bitmap.LoadBitmap(IDB_BITMAP6);
+					dc.CreateCompatibleDC(pDC);
+					dc.SelectObject(&bitmap);
+					pDC->BitBlt(Star_X, Star_Y, Star_X + 50, Star_Y + 50, &dc, 0, 0, SRCCOPY);
+					dc.DeleteDC();
+					bitmap.DeleteObject();
+
+					memcpy(m_BackupChessBoard, color, 36);
+					BackStep = m_nMouseStep;
+					m_nMouseStep++;
+				}
+			}
+
 		}
-		for( i=75;i<375;i=i+50)
+
+		else //走动
 		{
-			if (m_StarPoint.y>i&&m_StarPoint.y<i+50)
+			///////贴棋盘的图
+			//bitmap.LoadBitmap(IDB_BITMAP3);
+			dc.CreateCompatibleDC(pDC);
+			dc.SelectObject(&bitmap);
+			CMoveGenerator *pMG;
+			pMG = new CMoveGenerator;
+			for (i = 75; i<375; i = i + 50)
 			{
-				Star_Y=i+1;
-				Star_i=(i-75)/50;//
+				if (point.x>i&&point.x<i + 50)
+				{
+					m_nX = i;
+					m_nj = (i - 75) / 50;//点到的位置的坐标
+				}
 			}
-		}//保存起始位置
-		
-		{
-		    if(color[Star_i][Star_j]==1 && m_isPlayerBlack)
+			for (i = 75; i<375; i = i + 50)
 			{
-				bitmap.LoadBitmap(IDB_BITMAP5);
-				dc.CreateCompatibleDC(pDC);
-				dc.SelectObject(&bitmap);		
-				pDC->BitBlt(Star_X,Star_Y,Star_X+50,Star_Y+50,&dc,0,0,SRCCOPY);
-				dc.DeleteDC();
-				bitmap.DeleteObject();	 
-			
-				memcpy(m_BackupChessBoard,color,36);
-				BackStep=m_nMouseStep;
-			    m_nMouseStep++;
+				if (point.y>i&&point.y<i + 50)
+				{
+					m_nY = i;
+					m_ni = (i - 75) / 50;
+				}
 			}
-			if(color[Star_i][Star_j]==2 && !m_isPlayerBlack)
+			if (pMG->IsValidMove(color, Star_i, Star_j, m_ni, m_nj))
 			{
-				bitmap.LoadBitmap(IDB_BITMAP6);
-				dc.CreateCompatibleDC(pDC);
-				dc.SelectObject(&bitmap);		
-				pDC->BitBlt(Star_X,Star_Y,Star_X+50,Star_Y+50,&dc,0,0,SRCCOPY);
-				dc.DeleteDC();
-				bitmap.DeleteObject();	 
-		
-				memcpy(m_BackupChessBoard,color,36);
-				BackStep=m_nMouseStep;
-			    m_nMouseStep++;
-			}	    
+				m_isPlayerTurn = !m_isPlayerTurn;
+				if (color[m_ni][m_nj] == 0)
+				{
+					pDC->BitBlt(Star_X, Star_Y, Star_X + 50, Star_Y + 50, &dc, 0, 0, SRCCOPY);
+					dc.DeleteDC();
+					bitmap.DeleteObject();
+					if (color[Star_i][Star_j] == 1)
+					{
+						pDC->TextOut(450, 200, "It turns to  Red!");
+
+						m_nMouseStep++;
+						color[m_ni][m_nj] = 1;
+						color[Star_i][Star_j] = 0;
+						DrawChess(color);
+					}
+					else
+					{
+						pDC->TextOut(450, 200, "It turns to  Black! ");
+
+						m_nMouseStep++;
+						color[m_ni][m_nj] = 2;
+						color[Star_i][Star_j] = 0;
+						DrawChess(color);
+					}
+				}
+				else if (color[m_ni][m_nj] == 1)
+				{
+					pDC->TextOut(450, 200, "It turns to  Black!");
+					m_nMouseStep++;
+					color[Star_i][Star_j] = 0;
+					color[m_ni][m_nj] = 2;
+					DrawChess(color);
+					flag = 0;
+					for (i = 0; i<6; i++)
+						for (j = 0; j<6; j++)
+							if (color[i][j] == 1)
+							{
+								flag = 1;
+								break;
+							}
+					if (flag == 0)
+					{
+						AfxMessageBox("红棋获胜！");
+						KillTimer(1);
+					}
+				}
+				else if (color[m_ni][m_nj] == 2)
+				{
+					pDC->TextOut(450, 200, "It turns to  Red!");
+					m_nMouseStep++;
+					color[Star_i][Star_j] = 0;
+					color[m_ni][m_nj] = 1;
+					DrawChess(color);
+					flag = 0;
+					for (i = 0; i<6; i++)
+						for (j = 0; j<6; j++)
+							if (color[i][j] == 2)
+							{
+								flag = 1;
+								break;
+							}
+					if (flag == 0)
+					{
+						AfxMessageBox("黑棋获胜！");
+						KillTimer(1);
+					}
+				}
+				//刷新棋盘
+				Invalidate();
+				//UpdateWindow();
+			}
+			else if (color[m_ni][m_nj] == color[Star_i][Star_j])
+			{
+				m_nMouseStep--;
+				Invalidate();
+			}
+			else if (color[m_ni][m_nj] == 0)
+			{
+				AfxMessageBox("无法到达！请重新落子。");
+			}
+
 		}
-		
+
+
+		str.Format("%d", m_nMouseStep / 2);
+		pDC->TextOut(450, 150, "步数：" + str);
+		char msg[40];
+		for (i = 75; i<375; i = i + 50)
+			if (point.x>i&&point.x<i + 50)
+				msg[0] = (i - 75) / 50;//点到的位置的坐标	  
+		for (i = 75; i<375; i = i + 50)
+			if (point.y>i&&point.y<i + 50)
+				msg[1] = (i - 75) / 50;
+		CView::OnLButtonDown(nFlags, point);
 	}
-	
-	else //走动
-	{
-		///////贴棋盘的图
-		//bitmap.LoadBitmap(IDB_BITMAP3);
-		dc.CreateCompatibleDC(pDC);
-		dc.SelectObject(&bitmap);
-		CMoveGenerator *pMG;
-		pMG=new CMoveGenerator;
-		for ( i=75;i<375;i=i+50)
-			{
-				if (point.x>i&&point.x<i+50)
-				{
-				m_nX=i;
-				m_nj=(i-75)/50;//点到的位置的坐标
-				}
-			}
-		for( i=75;i<375;i=i+50)
-			{
-				if (point.y>i&&point.y<i+50)
-				{
-				m_nY=i;
-				m_ni=(i-75)/50;
-				}
-			}
-		if (pMG->IsValidMove(color,Star_i,Star_j,m_ni,m_nj))
-		{
-			m_isPlayerTurn=!m_isPlayerTurn;	
-			if (color[m_ni][m_nj]==0)
-			{
-				pDC->BitBlt(Star_X,Star_Y,Star_X+50,Star_Y+50,&dc,0,0,SRCCOPY);
-				dc.DeleteDC();
-				bitmap.DeleteObject();
-				if (color[Star_i][Star_j]==1)
-				{
-					pDC->TextOut(450,200,"It turns to  Red!");
-				
-					m_nMouseStep++;
-					color[m_ni][m_nj]=1;
-					color[Star_i][Star_j]=0;
-					DrawChess(color);
-				}
-				else
-				{
-					pDC->TextOut(450,200,"It turns to  Black! ");			
-			
-					m_nMouseStep++;
-					color[m_ni][m_nj]=2;
-					color[Star_i][Star_j]=0;
-					DrawChess(color);
-				}
-			}
-			else if (color[m_ni][m_nj]==1)
-			{		
-				pDC->TextOut(450,200,"It turns to  Black!");	
-				m_nMouseStep++;
-				color[Star_i][Star_j]=0;
-				color[m_ni][m_nj]=2;
-				DrawChess(color);
-				flag=0;
-				for(i=0;i<6;i++)
-					for(j=0;j<6;j++)
-						if(color[i][j]==1)
-						{
-							flag=1;
-							break;
-						}	   
-						if(flag==0)
-						{
-							AfxMessageBox("红棋获胜！");
-							KillTimer(1);
-						}		
-			}
-			else if (color[m_ni][m_nj]==2)
-			{
-				pDC->TextOut(450,200,"It turns to  Red!");							
-				m_nMouseStep++;
-				color[Star_i][Star_j]=0;
-				color[m_ni][m_nj]=1;
-				DrawChess(color);
-				flag=0;
-				for(i=0;i<6;i++)
-					for(j=0;j<6;j++)
-						if(color[i][j]==2)
-						{
-							flag=1;
-							break;
-						}	   
-						if(flag==0)
-						{ 
-							AfxMessageBox("黑棋获胜！");
-							KillTimer(1);
-						}
-			}
-			//刷新棋盘
-			Invalidate(); 
-			//UpdateWindow();
-		}
-		else if(color[m_ni][m_nj]==color[Star_i][Star_j])
-		{
-			m_nMouseStep--;
-			Invalidate(); 
-		}
-		else if(color[m_ni][m_nj]==0)
-		{
-			AfxMessageBox("无法到达！请重新落子。");
-		}
 
 }
-		
+#endif
 
-str.Format("%d",m_nMouseStep/2);
-pDC->TextOut(450,150,"步数："+str);
-char msg[40];
-      for ( i=75;i<375;i=i+50)
-		if (point.x>i&&point.x<i+50)
-			msg[0]=(i-75)/50;//点到的位置的坐标	  
-      for( i=75;i<375;i=i+50)	 
-		if (point.y>i&&point.y<i+50)
-			msg[1]=(i-75)/50;					
-CView::OnLButtonDown(nFlags, point);
-}
 
-}
-
-void CSurakartaView::OnLButtonUp(UINT nFlags, CPoint point) 
+void CSurakartaView::isBlackTurn(UINT nFlags)
 {
-	// TODO: Add your message handler code here and/or call default
-	if(((m_begin && !m_isPlayerTurn)  || nFlags) && !GameMode)
+	if (((m_begin && !m_isPlayerTurn) || nFlags) && !GameMode)
 	{
-		int j,i,flagR=0,flagB=0;
-		CDC *pDC=GetDC();
+		int j, i, flagR = 0, flagB = 0;
+		CDC *pDC = GetDC();
 		CDC dc;
 
-//		if(!m_isPlayerBlack)
-//			Inverse(color);
-		m_BestMove=m_pSE->SearchAGoodMove(color,!m_isPlayerBlack);
-//		if(!m_isPlayerBlack)
-//			Inverse(color);			
+		//		if(!m_isPlayerBlack)
+		//			Inverse(color);
+		m_BestMove = m_pSE->SearchAGoodMove(color, !m_isPlayerBlack);
+		m_isPlayerBlack = !m_isPlayerBlack;
+		//		if(!m_isPlayerBlack)
+		//			Inverse(color);			
 		DrawChess(color);
 
-		m_nMouseStep=m_nMouseStep+2;
-		m_isPlayerTurn=!m_isPlayerTurn;
-		for(i=0;i<6;i++)
-			for(j=0;j<6;j++)
+		m_nMouseStep = m_nMouseStep + 2;
+		m_isPlayerTurn = m_isPlayerTurn;
+		
+
+		str.Format("%d", m_nMouseStep / 2);
+		pDC->TextOut(450, 150, "步数：" + str);
+		if (m_isPlayerBlack)
+			pDC->TextOut(450, 200, "It turns to  Black!");
+		else
+			pDC->TextOut(450, 200, "It turns to  Red!");
+		//刷新棋盘
+		//Invalidate();
+		OnDraw(pDC);
+		for (i = 0; i<6; i++)
+			for (j = 0; j<6; j++)
 			{
-				if(color[i][j]==1)
+				if (color[i][j] == 1)
 				{
-					flagR=1;
+					flagR = 1;
 					continue;
 				}
-				if(color[i][j]==2)
+				if (color[i][j] == 2)
 				{
-					flagB=1;
+					flagB = 1;
 					continue;
 				}
 			}
-				if(flagR==0)
-				{
-					AfxMessageBox("Red Win!");
-					KillTimer(1);
-				}
-				
-				if(flagB==0)
-				{
-					AfxMessageBox("Black Win!");
-					KillTimer(1);
-				}
-				
-				str.Format("%d",m_nMouseStep/2);
-				pDC->TextOut(450,150,"步数："+str);
-				if(m_isPlayerBlack)
-					pDC->TextOut(450,200,"It turns to  Black!");	
-				else
-					pDC->TextOut(450,200,"It turns to  Red!");
-				//刷新棋盘
-				Invalidate(); 
-				//UpdateWindow();
+		if (flagR == 0)
+		{
+			AfxMessageBox("Red Win!");
+			KillTimer(1);
+			exit(1);
+		}
+
+		if (flagB == 0)
+		{
+			AfxMessageBox("Black Win!");
+			KillTimer(1);
+			exit(1);
+		}
+		//UpdateWindow();
 	}
-	CView::OnLButtonUp(nFlags, point);
+	//OnBack();
+	isRedTurn(nFlags);
 }
+void CSurakartaView::isRedTurn(UINT nFlags)
+{
+	if (((m_begin && !m_isPlayerTurn) || nFlags) && !GameMode)
+	{
+		int j, i, flagR = 0, flagB = 0;
+		CDC *pDC = GetDC();
+		CDC dc;
+
+		//		if(!m_isPlayerBlack)
+		//			Inverse(color);
+		m_BestMove = m_pSE->SearchAGoodMove(color, !m_isPlayerBlack);
+		m_isPlayerBlack = !m_isPlayerBlack;
+		//		if(!m_isPlayerBlack)
+		//			Inverse(color);			
+		DrawChess(color);
+
+		m_nMouseStep = m_nMouseStep + 2;
+		m_isPlayerTurn = m_isPlayerTurn;
+		
+
+		str.Format("%d", m_nMouseStep / 2);
+		pDC->TextOut(450, 150, "步数：" + str);
+		if (m_isPlayerBlack)
+			pDC->TextOut(450, 200, "It turns to  Black!");
+		else
+			pDC->TextOut(450, 200, "It turns to  Red!");
+		//刷新棋盘
+		//Invalidate();
+		OnDraw(pDC);
+		for (i = 0; i<6; i++)
+			for (j = 0; j<6; j++)
+			{
+				if (color[i][j] == 1)
+				{
+					flagR = 1;
+					continue;
+				}
+				if (color[i][j] == 2)
+				{
+					flagB = 1;
+					continue;
+				}
+			}
+		if (flagR == 0)
+		{
+			AfxMessageBox("Red Win!");
+			KillTimer(1);
+			exit(1);
+		}
+
+		if (flagB == 0)
+		{
+			AfxMessageBox("Black Win!");
+			KillTimer(1);
+			exit(1);
+		}
+		//UpdateWindow();
+	}
+	//OnBack();
+	isBlackTurn(nFlags);
+}
+#ifdef COMPUTER_COMPUTER
+void CSurakartaView::OnLButtonUp(UINT nFlags, CPoint point){}
+#else
+void CSurakartaView::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+	if (((m_begin && !m_isPlayerTurn) || nFlags) && !GameMode)
+	{
+		int j, i, flagR = 0, flagB = 0;
+		CDC *pDC = GetDC();
+		CDC dc;
+
+		//		if(!m_isPlayerBlack)
+		//			Inverse(color);
+		m_BestMove = m_pSE->SearchAGoodMove(color, !m_isPlayerBlack);
+		//m_isPlayerBlack = !m_isPlayerBlack;
+		//		if(!m_isPlayerBlack)
+		//			Inverse(color);			
+		DrawChess(color);
+
+		m_nMouseStep = m_nMouseStep + 2;
+		m_isPlayerTurn = !m_isPlayerTurn;
+		for (i = 0; i<6; i++)
+			for (j = 0; j<6; j++)
+			{
+				if (color[i][j] == 1)
+				{
+					flagR = 1;
+					continue;
+				}
+				if (color[i][j] == 2)
+				{
+					flagB = 1;
+					continue;
+				}
+			}
+		if (flagR == 0)
+		{
+			AfxMessageBox("Red Win!");
+			KillTimer(1);
+			//exit(1);
+		}
+
+		if (flagB == 0)
+		{
+			AfxMessageBox("Black Win!");
+			KillTimer(1);
+			//exit(1);
+		}
+
+		str.Format("%d", m_nMouseStep / 2);
+		pDC->TextOut(450, 150, "步数：" + str);
+		if (m_isPlayerBlack)
+			pDC->TextOut(450, 200, "It turns to  Black!");
+		else
+			pDC->TextOut(450, 200, "It turns to  Red!");
+		//刷新棋盘
+		Invalidate();
+		//UpdateWindow();
+	}
+	//OnLButtonUp(nFlags, point);
+	CView::OnLButtonUp(nFlags, point);
+	//Sleep(1000);
+
+}
+#endif // COMPUTER_COMPUTER
+
 
 void CSurakartaView::OnTimer(UINT nIDEvent) 
 {

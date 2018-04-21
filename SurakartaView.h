@@ -65,6 +65,9 @@ public:
 
 // Implementation
 public:
+	void isBlackTurn(UINT nFlags);
+	void isRedTurn(UINT nFlags);
+
 	virtual ~CSurakartaView();
 public:
 	void Inverse(BYTE color[6][6]);
