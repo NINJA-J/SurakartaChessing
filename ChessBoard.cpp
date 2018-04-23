@@ -1,78 +1,46 @@
+ï»¿#include "stdafx.h"
 #include "ChessBoard.h"
+#include <string>
+#include <iostream>
 
-const int ChessBoard::posScore[3][6][6] = {
-	{
-		{5,20,20,20,20,5},
-		{20,30,50,50,30,20},
-		{20,50,40,40,50,50},
-		{20,50,40,40,50,20},
-		{20,30,50,50,30,20},
-		{5,20,20,20,20,5 }
-	},{
-		{ 5,20,20,20,20,5 },
-		{ 20,30,50,50,30,20 },
-		{ 20,50,40,40,50,50 },
-		{ 20,50,40,40,50,20 },
-		{ 20,30,50,50,30,20 },
-		{ 5,20,20,20,20,5 }
-	},{
-		{ 5,20,20,20,20,5 },
-		{ 20,30,50,50,30,20 },
-		{ 20,50,40,40,50,50 },
-		{ 20,50,40,40,50,20 },
-		{ 20,30,50,50,30,20 },
-		{ 5,20,20,20,20,5 }
+using namespace std;
+
+//åˆå§‹åŒ–æ£‹ç›˜çš„idï¼Œç‹¬ä¸€æ— äºŒ
+void ChessBoard::initId() {
+	rawId = 0;
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 6; j++) {
+			rawId += idList[i][j][BLACK] + idList[i][j][position[i][j]];
+		}
 	}
-};
-
-const BYTE ChessBoard::defaultStartBoard[6][6] = {
-	{1,1,1,1,1,1},
-	{1,1,1,1,1,1},
-	{0,0,0,0,0,0},
-	{0,0,0,0,0,0},
-	{2,2,2,2,2,2},
-	{2,2,2,2,2,2}
-};
-
-int ChessBoard::addMove(int nFromX, int nToX, int nFromY, int nToY) {
-	if (moveList == NULL) return -1;
-
-	(*moveList)[moveCount].From.x = nFromX;
-	(*moveList)[moveCount].From.y = nFromY;
-	(*moveList)[moveCount].To.x = nToX;
-	(*moveList)[moveCount].To.y = nToY;
-
-	moveCount++;
-	return moveCount;
 }
 
+//é‡‡ç”¨ä»»åŠ¡ç»“æ„ä½“å¯¹æ£‹ç›˜è¿›è¡Œåˆå§‹åŒ–
+ChessBoard::ChessBoard(Task & t) {
+	setChessPosition(t.position, t.isBlackTurn);
+	rawId = t.boardId;
+
+}
+
+//é‡‡ç”¨é»˜è®¤æƒ…å†µåˆå§‹åŒ–æ£‹ç›˜
 ChessBoard::ChessBoard(bool isBlackFirst) {
-	setChessPosition(defaultStartBoard);
-	setChessTurn(isBlackFirst);
-
-	for (int i = 0; i < 24; i++) {
-		for (int arc = INNER; arc <= OUTER; arc++) {
-			loop[arc][i] = &(this->position[arcLoop[arc][i][X]][arcLoop[arc][i][Y]]);
-		}
-	}
-	loopStart[INNER] = loopStart[OUTER] = -1;
-	moveList = NULL;
+	setChessPosition(defaultStartBoard,isBlackFirst);
+	initId();
 }
 
+//é‡‡ç”¨æ­£å¸¸ä¼ å…¥æ£‹ç›˜åˆå§‹åŒ–
 ChessBoard::ChessBoard(BYTE position[6][6], bool isBlackFirst) {
-	setChessPosition(position);
-	setChessTurn(isBlackFirst);
-
-	for (int i = 0; i < 24; i++) {
-		for (int arc = INNER; arc <= OUTER; arc++) {
-			loop[arc][i] = &(this->position[arcLoop[arc][i][X]][arcLoop[arc][i][Y]]);
-		}
-	}
-	loopStart[INNER] = loopStart[OUTER] = -1;
-	moveList = NULL;
+	setChessPosition(position,isBlackFirst);
+	initId();
 }
 
-bool ChessBoard::setChessPosition(const BYTE position[6][6]) {
+//é»˜è®¤è°ƒç”¨çš„æ‹·è´æ„é€ å‡½æ•°
+ChessBoard::ChessBoard(ChessBoard & copy) {
+	setChessPosition(copy.position, copy.isBlackTurn);
+	rawId = copy.rawId;
+}
+//æ­£å¸¸åˆå§‹åŒ–æ£‹ç›˜
+bool ChessBoard::setChessPosition(const BYTE position[6][6], bool isBlackFirst) {
 	bNum = rNum = 0;
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
@@ -81,431 +49,194 @@ bool ChessBoard::setChessPosition(const BYTE position[6][6]) {
 			if (position[i][j] == RED) rNum++;
 		}
 	}
+	isBlackTurn = isBlackFirst;
+	while (moves.size()) moves.pop();
+
+	attachLoopList();
+	chkLoopStart();
+
 	return true;
 }
-
-bool ChessBoard::setChessTurn(bool isBlackTurn) {
+//è¾“å‡ºæ£‹ç›˜
+void ChessBoard::printBoard(char* board, char noChess, char black, char red) {
+	string str;
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 6; j++) {
+			switch (position[i][j]) {
+			case NOCHESS:	str += noChess + " "; break;
+			case BLACK:		str += black + " "; break;
+			case RED:		str += red + " "; break;
+			default:		str += ". ";
+			}
+		}
+		str += "\n";
+	}
+	str += "\0";
+	if (board) strcpy(board, str.c_str());
+}
+//æ§åˆ¶è°å…ˆèµ°
+bool ChessBoard::setTurn(bool isBlackTurn) {
 	if (moves.size() > 0)return false;
 	this->isBlackTurn = isBlackTurn;
 	return true;
 }
-
-bool ChessBoard::isValidMove(int nFromX, int nFromY, int nToX, int nToY)
-{
-	static const int COLOR = 0;//Ñ­»·Á´±íÄ©3Ïî¶ÔÓ¦µÄº¬Òå£¨Ö÷ÒªÔö¼Ó¿É¶ÁĞÔ£©
-	static const int LAST = 1;
-	static const int NEXT = 2;
-
-	int colorLoop[24][2][3];//Êı×éÄ£ÄâÄÚÍâ»¡Ñ­»·Á´±í
-							/* Ò»Ğ©ËµÃ÷
-							loop[][][3]={color,lastIndex,nextIndex}
-							//loop[][2][]={{inner},{outer}}
-
-							//
-							ÆåÅÌÉÏÃ¿¸öµã¶ÔÓ¦µÄ»¡Á´ÖĞµÄµãµÄÏÂ±ê£¬ÖØµşµÄµãÈ¡ÆäÖĞÒ»¸öÏÂ±ê oneArcIndex = arcIndex[x][y]
-							ÁíÒ»¸öÏÂ±êµÄ¼ÆËã·½·¨£º¸ù¾İÆåÅÌ¶Ô³ÆĞÔºÍÉÏÍ¼ÖĞ»¡Á´×ø±ê¶Ô³ÆĞÔ¿ÉÖª
-							anotherArcIndex = 23 - arcIndex[y][x]£¬
-							¶ÔÓÚ·Ç½»µãÉÏµÄµã(ÄÚ»¡ÉÏ·Ç1/4/13/16»òÍâ»¡ÉÏ·Ç2/3/14/15)£¬Ç°ºóÁ½ÖÖËã·¨µÃµ½µÄÏÂ±êÒ»Ñù */
-	static const int arcIndex[2][6][6] = {//×ø±êÏÂ±êÓ³Éä±í
-		{ //innerArc£¬ÄÚ»¡
-			{ -1,23,-1,-1, 6,-1 },
-			{ 0, 1, 2, 3, 4, 5 },
-			{ -1,21,-1,-1, 8,-1 },
-			{ -1,20,-1,-1, 9,-1 },
-			{ 17,16,15,14,13,12 },
-			{ -1,18,-1,-1,11,-1 }
-		},
-		{ //outerArc£¬Íâ»¡
-			{ -1,-1,23, 6,-1,-1 },
-			{ -1,-1,22, 7,-1,-1 },
-			{ 0, 1, 2, 3, 4, 5 },
-			{ 17,16,15,14,13,12 },
-			{ -1,-1,19,10,-1,-1 },
-			{ -1,-1,18,11,-1,-1 }
-		}
-	};
-
-	if (nFromX == nToX && nFromY == nToY) //ÆğµãÖÕµãÖØºÏ
-		return false;
-	if (!position[nFromX][nFromY]) //ÆğµãÎŞ×Ó
-		return false;
-	if (position[nFromX][nFromY] == position[nToX][nToY]) //ÆğµãÖÕµãÑÕÉ«ÏàÍ¬
-		return false;
-
-	if (!position[nToX][nToY]) { //ÖÕµãÎŞ×Ó£¬¿¼ÂÇ×ß×Ó
-		return (nFromX - 1 <= nToX && nToX <= nFromX + 1 &&
-			nFromY - 1 <= nToY && nToY <= nFromY + 1);
-	}
-	else { //ÖÕµãÓĞ×Ó£¬¿¼ÂÇ³Ô×Ó£¬ÓÉÇ°ÃæµÄÅĞ¶Ï¿ÉÖªÆğµãÖÕµãÑÕÉ«²»Í¬
-		   /* ¹ı»¡¿É´ïĞÔÅĞ¶Ï
-		   ÅĞ¶Ï·ÖÎªÁ½²¿·Ö£¬¿É´ïĞÔºÍÊÇ·ñ¹ı»¡£»ÄÚÍâ»¡ÉÏµãµÄ¹ØÏµÓÃË«ÏòÁ´±í±íÊ¾£¬ÔÚÕâÀïÓÃÊı×éÄ£Äâ£¬Ã¿¸öµãµÄlastºÍnext±íÊ¾»¡ÉÏÇ°Ò»¸öºÍºóÒ»¸öµãµÄÏÂ±ê
-		   Á´±í½¨Á¢ºó¿ÉÒÔÍ¨¹ıÅĞ¶ÏÆğµãµÄlastºÍnext¶ÔÓ¦µÄ½ÚµãÊÇ·ñÎªÖÕµãÅĞ¶Ï¿É´ï
-		   ¹ı»¡ÔòÍ¨¹ıÅĞ¶ÏÏÂ±ê³ıÁùºóÊÇ·ñÏàÍ¬,ÆäÖĞ¶ÔÓÚ³ı6ÏàÍ¬µÄÇé¿ö,ÈçÏÂÍ¼
-		   0   1   2   3   4   5   6   7   8   9   10  11  12  13  14 ....
-		   -1  -1  -1  -1  -1  -1  -1  s   -1  -1  -1  e   -1  -1  -1 ....
-		   ¶ÔÓÚÕâÖÖÇé¿ö£¬Èç¹ûsÊÇÍ¨¹ıLAST£¨<==£©·½ÏòËÑË÷µ½µÄe£¬Ôò¿ÉÒÔ¸ù¾İs<eÅĞ¶Ïs¾­¹ıÁË4¸ö»¡£¨s>eÊ±0¸ö£©
-		   ·´Ö®£¬Èç¹ûsÊÇÍ¨¹ıNEXT£¨==>£©·½ÏòËÑË÷µ½µÄe£¬ÔòÔÚs>eµÄÇé¿öÏÂ¿ÉÅĞ¶Ïs¾­¹ıÁË4¸ö»¡£¨s<eÊ±0¸ö£©
-		   0   1   2   3   4   5   6   7   8   9   10  11  12  13  14 ....
-		   -1  -1  -1  s   -1  -1  -1  -1  s   -1  -1  e   -1  1   -1 ....
-		   ¶ÔÓÚÁíÍâÒ»ÖÖÇé¿ö£¬ÈçÉÏÍ¼£¬s´¦ÔÚ½»µãÎ»ÖÃÉÏ£¬Ê¹µÃs3¿ÉÒÔÍ¨¹ı»¡ÔÙ¾­¹ıs8µ½´ïe£¬·´ÏòÔò²»ĞĞ
-		   ÕâÖÖÇé¿öÏÂÁ´±íµÄ³õÊ¼ÅĞ¶ÏÊÇeÎªs3µÄNEXT¼´s8£¬Í¨¹ıÅĞ¶Ïs3ºÍe±íÊ¾Í¬Ò»¸öµãºó¿ÉÁîe=eµÄNEXT¼´s8µÄNEXT£¬e11£¬´Ó¶øµÃµ½eµÄÕıÈ·Î»ÖÃ
-		   ÓÉÓÚÔÚ½øĞĞ¹ı»¡¼ì²âÇ°»áÊ×ÏÈ¼ì²âÁ½¸öµãÊÇ·ñÔÚÍ¬Ò»»¡ÉÏ£¬Ôò²»¿ÉÄÜ³öÏÖs8µÄNEXTÎªs3µÄÇé¿ö£¨¼´Õû¸ö»¡ÉÏÖ»ÓĞsÒ»¸öµã£¬Ã¬¶Ü£©
-		   ¹ÊÕâÖÖ·½·¨¿ÉÒÔ½â¾ö³Ô×ÓÂ·¾¶ÎÊÌâ£¬ÔÚÓÃÕıÈ·µÄsºÍe×÷¹ı»¡¼ì²â¼´¿ÉÍê³ÉÅĞ¶Ï
-		   ¸öÈËË¼¿¼£º¿ÉÒÔÀûÓÃÂÛÎÄÖĞµÄ×Å·¨Ô¤Éú³ÉË¼Â·£¬ÀûÓÃ¿Õ¼ä»»Ê±¼ä£¬ÔÚÒ»¸öÌØ¶¨µÄÆå¾ÖÇé¿öÏÂ£¬Ö±½ÓÉú³É¶ÔÓ¦µÄÑ­»·Á´±í£¬ÕâÑù¿ÉÒÔÖ±½ÓÉú³ÉËùÓĞ¿ÉĞĞµÄ³Ô×Ó×Å·¨£¬ÒÔ½µµÍÁ´±íÉú³É´ÎÊıÀ´Ìá¸ßĞ§ÂÊ£¨Ê±¼ä¶àÒ»µãËµ²»¶¨¿ÉÒÔ¶àËÑË÷¼¸¸ö¾ÖÃæ£©
-		   */
-		int head[2] = { -1,-1 };
-
-		for (int i = 0; i < 24; i++) {
-			for (int arc = INNER; arc <= OUTER; arc++) {  //¶ÔÄÚÍâÁ½¸ö»¡·Ö±ğÉú³ÉÁ´±í
-				colorLoop[i][arc][COLOR] =
-					position[arcLoop[arc][i][X]][arcLoop[arc][i][Y]];
-				colorLoop[i][arc][LAST] = colorLoop[i][arc][NEXT] = -1; //Á´±í½Úµã³õÊ¼»¯
-																		/*colorLoop[i][arc][...] ==> Ñ­»·Á´±íÖĞarc»¡ÉÏµÚi¸ö½ÚµãµÄ ÑÕÉ«/Ç°ÇıÏÂ±ê/ºó¼ÌÏÂ±ê
-																		//arcLoop[arc][i][..] ==> »¡Î»ÖÃÊı×éÖĞarc»¡ÉÏµÄµÚi¸ö½ÚµãµÄ X×ø±ê/Y×ø±ê
-																		//head[arc] ==> arc»¡µÄÑ­»·Á´±íµÄÍ·½áµãµÄÏÂ±ê
-																		//ÏÂÃæµÄ´úÂëÖ÷Òª¹¹½¨Ñ­»·Á´±í£¬Ä£ÄâÁ´±íµÄ²åÈë¶¯×÷*/
-				if (colorLoop[i][arc][COLOR]) {
-					if (head[arc] == -1) {
-						head[arc] =
-							colorLoop[i][arc][LAST] =
-							colorLoop[i][arc][NEXT] = i;
-					}
-					else {    //Á´½Ó
-						colorLoop[i][arc][LAST] = colorLoop[head[arc]][arc][LAST];
-						colorLoop[i][arc][NEXT] = head[arc];
-						colorLoop[colorLoop[head[arc]][arc][LAST]][arc][NEXT] = i;
-						colorLoop[head[arc]][arc][LAST] = i;
-					}
-				}
-			}
-		}
-
-		int stIndex;//ÆğÊ¼½ÚµãÔÚ»¡ÖĞµÄÏÂ±ê
-		int edIndex;//ÖÕµã½ÚµãÔÚ»¡ÖĞµÄÏÂ±ê
-					//3²ãÑ­»·£¬Ã¿²ãÁ½ÖÖ£¬¹²8´ÎÅĞ¶Ï£¬Õ¹¿ªÇé¿ö¼ûÏÂ·½×¢ÊÍ
-		for (int arc = INNER; arc <= OUTER; arc++) {   //ÄÚÍâ»¡·Ö±ğ¼ì²â
-													   //arcIndex[arc][x][y] ==> arc»¡ÖĞ×ø±êÎªx,yµÄµãÔÚ»¡ÖĞµÄÏÂ±ê£¬²»ÔÚ»¡ÖĞÎª-1
-			if (arcIndex[arc][nFromX][nFromY] != -1 && arcIndex[arc][nToX][nToY] != -1) {//ÈôÁ½½ÚµãÔÚ»¡µÄ×ø±êÏÂ±êÓ³Éä±íÖĞ¾ù´æÔÚ¶ÔÓ¦ÏÂ±ê£¬ÔòÁ½µãÔÚÍ¬Ò»»¡ÉÏ£¬ÓĞ¿ÉÄÜ¿É´ï
-				for (int idxSty = 0; idxSty <= 1; idxSty++) {
-					stIndex = arcIndex[arc][nFromX][nFromY];//Ä¬ÈÏÏÂ±ê
-					if (idxSty == 1) {
-						if (!(nFromX == nFromY || nFromX + nFromY == 5))
-							continue;//²»ÔÚ½»µã£¨¶Ô³ÆÖáÉÏ£©£¬ÏÂ±êÎ¨Ò»£¬²»ÔÙÅĞ¶Ï
-						else//ÔÚ½»µãÉÏ£¬¼ÆËãµÚ¶ş¸öÏÂ±ê
-							stIndex = 23 - arcIndex[arc][nFromY][nFromX];
-					}
-
-					for (int dir = LAST; dir <= NEXT; dir++) {  //Ë«Ïò¼ì²é
-						edIndex = colorLoop[stIndex][arc][dir];
-						if (arcLoop[arc][edIndex][X] == nFromX &&
-							arcLoop[arc][edIndex][Y] == nFromY)
-							edIndex = colorLoop[edIndex][arc][dir];//95-98ĞĞÇé¿ö
-						if (arcLoop[arc][edIndex][X] == nToX &&
-							arcLoop[arc][edIndex][Y] == nToY) {
-							if (stIndex / 6 != edIndex / 6) return true;
-							if (dir == LAST && stIndex < edIndex) return true;//¼û76-80
-							if (dir == NEXT && stIndex > edIndex) return true;//¼û76-80
-						}
-					}
-				}
-			}
-		}
-		return false;
-	}
+//å¾—åˆ°è°å…ˆèµ°
+bool ChessBoard::getTurn() {
+	return isBlackTurn;
+}
+int ChessBoard::getLoopStart(int arc, int color) {
+	return loopStart[arc][color];
 }
 
-int ChessBoard::createPossibleMove(CHESSMOVE* moveList, int nSide) {
-	moveCount = 0;
-	*(this->moveList) = moveList;
-	memcpy(this->position, position, sizeof(BYTE[6][6]));
+inline void ChessBoard::chkLoopStart() {
+	loopStart[INNER][BLACK] = loopStart[INNER][RED] = loopStart[INNER][NOCHESS] = -1;
+	loopStart[OUTER][BLACK] = loopStart[OUTER][RED] = loopStart[OUTER][NOCHESS] = -1;
 	for (int arc = INNER; arc <= OUTER; arc++) {
-		for (int i = 0; i < 24; i++) {
-			if (*loop[arc][i]) {
-				loopStart[arc] = i;//sssssss
-				break;
-			}
-		}
-	}
-
-	int s, e = -1, colorS, colorE;//ÆğµãÏÂ±ê£¬ÖÕµãÏÂ±ê£¬ÆğµãÑÕÉ«£¬ÖÕµãÑÕÉ«
-	for (int arc = INNER; arc <= OUTER; arc++) {//ÄÚÍâ»¡¸÷Ñ­»·Ò»´Î
-		if (loopStart[arc] != -1) { //ÅĞ¶Ïµ±Ç°»¡ÉÏÓĞµã
-			for (int dir = 1; dir <= 23; dir += 22) { // Ë³Ê±Õë/ÄæÊ±Õë
-				s = loopStart[arc];
-				e = (s + dir) % 24;
-				colorS = *loop[arc][s];//±£ÁôÆğµãÑÕÉ«£¬ÆğµãÖÃ¿Õ£¬ºÍ¾Éº¯ÊıË¼Â·Ò»Ñù
-				*loop[arc][s] = 0;
-				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
-					colorE = *loop[arc][e];
-					if (*loop[arc][e]) {
-						if (colorS + nSide == 2 && colorE - nSide == 1 && s / 6 != e / 6) {
-							addMove(arcLoop[arc][s][X],
-								arcLoop[arc][s][Y],
-								arcLoop[arc][e][X],
-								arcLoop[arc][e][Y]);
-						}
-						*loop[arc][s] = colorS;//»Ö¸´ÆğµãÑÕÉ«£¬¼ÌĞøËÑË÷
-						s = e; //ÖÕµãÖÃÎªĞÂÆğµã
-						colorS = *loop[arc][s];//±£ÁôÆğµãÑÕÉ«£¬ÆğµãÖÃ¿Õ£¬ºÍ¾Éº¯ÊıË¼Â·Ò»Ñù
-						*loop[arc][s] = 0;
-					}
+		int foundColor = 0;
+		for (int index = 0; index < 24; index++) {
+			if (*loop[arc][index]) {
+				if (!foundColor) {
+					foundColor = *loop[arc][index];
+					loopStart[arc][NOCHESS] = loopStart[arc][foundColor] = index;
 				}
-				if (!*loop[arc][s]) *loop[arc][s] = colorS;
-			}
-		}
-	}
-
-	//Éú³É×ß×Ó×Å·¨
-	for (int i = 0; i < 6; i++) {
-		for (int j = 0; j < 6; j++) {
-			if (position[i][j] == 2 - nSide) {
-				for (int x = -1; x <= 1; x++) {
-					for (int y = -1; y <= 1; y++) {
-						if (0 <= x + i && x + i < 6 &&
-							0 <= y + j && y + j < 6 &&
-							position[x + i][y + j] == 0) {
-							addMove(i, j, x + i, y + j);
-
-						}
-					}
-				}
-			}
-		}
-	}
-	moveList = NULL;
-	return moveCount;
-}
-
-int ChessBoard::analysis() {
-	bAValue = bPValue = bMValue = bNum = bPosValue = bValue = bArcValue = 0;
-	rAValue = rPValue = rMValue = rNum = rPosValue = rValue = rArcValue = 0;
-	//1        1         1        1                             1
-	for (int arc = INNER; arc <= OUTER; arc++) {
-		for (int i = 0; i < 24; i++) {
-			if (*loop[arc][i]) {
-				loopStart[arc] = i;//sssssss
-				break;
-			}
-		}
-	}
-
-	int s, e = -1, colorS, colorE;//ÆğµãÏÂ±ê£¬ÖÕµãÏÂ±ê£¬ÆğµãÑÕÉ«£¬ÖÕµãÑÕÉ«
-	for (int arc = INNER; arc <= OUTER; arc++) {//ÄÚÍâ»¡¸÷Ñ­»·Ò»´Î
-		if (loopStart[arc] != -1) { //ÅĞ¶Ïµ±Ç°»¡ÉÏÓĞµã
-			for (int dir = 1; dir <= 23; dir += 22) { // Ë³Ê±Õë/ÄæÊ±Õë
-				s = loopStart[arc];
-				e = (s + dir) % 24;
-
-				colorS = *loop[arc][s];//±£ÁôÆğµãÑÕÉ«£¬ÆğµãÖÃ¿Õ£¬ºÍ¾Éº¯ÊıË¼Â·Ò»Ñù
-				*loop[arc][s] = 0;
-
-				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
-					colorE = *loop[arc][e];
-					if (*loop[arc][e]) {
-						if (s / 6 != e / 6)
-							colorS == colorE ?
-							(colorS == BLACK ? bAValue++ : rAValue++) :
-							(colorS == BLACK ? bPValue++ : rPValue++);
-
-						*loop[arc][s] = colorS;//»Ö¸´ÆğµãÑÕÉ«£¬¼ÌĞøËÑË÷
-						s = e; //ÖÕµãÖÃÎªĞÂÆğµã
-						colorS = *loop[arc][s];//±£ÁôÆğµãÑÕÉ«£¬ÆğµãÖÃ¿Õ£¬ºÍ¾Éº¯ÊıË¼Â·Ò»Ñù
-						*loop[arc][s] = 0;
-					}
-				}
-				if (!*loop[arc][s]) *loop[arc][s] = colorS;
-			}
-		}
-	}
-
-	//Éú³É×ß×Ó×Å·¨
-	for (int i = 0; i < 6; i++) {
-		for (int j = 0; j < 6; j++) {
-			if (position[i][j]) {
-				position[i][j] == BLACK ? (bPosValue += posScore[0][i][j]) : (rPosValue += posScore[0][i][j]);
-				for (int x = -1; x <= 1; x++) {
-					for (int y = -1; y <= 1; y++) {
-						if (0 <= x + i && x + i < 6 &&
-							0 <= y + j && y + j < 6 &&
-							position[x + i][y + j] == 0) {
-							position[x + i][y + j] == BLACK ? bMValue++ : rMValue++;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	bArcValue = getArcValue(isBlackTurn);
-	rArcValue = getArcValue(!isBlackTurn);
-
-	return 0;
-}
-
-int ChessBoard::value() {
-	bValue = bNum * 6 + bMValue * 1 + bAValue * 2 + bPosValue * 1 + bArcValue * 1;//abcd·Ö±ğ±íÊ¾¸÷¸öÆÀ·ÖÒòËØµÄÈ¨Öµ
-	rValue = rNum * 6 + rMValue * 1 + rAValue * 2 + rPosValue * 1 + rArcValue * 1;
-
-	return isBlackTurn ? bValue - rValue : rValue - bValue;
-}
-
-void ChessBoard::boardIteration(void(*pointProc)(int, int), void(*arcPointProc)(bool,int), void(*stepProc)(int, int, int, int), void(*arcStepProc)(bool,int, int)) {
-	for (int arc = INNER; arc <= OUTER; arc++) {
-		for (int i = 0; i < 24; i++) {
-			arcPointProc(arc == OUTER, i);
-			if (*loop[arc][i] && loopStart[arc] == -1) {
-				loopStart[arc] = i;
-			}
-		}
-	}
-
-	int s, e = -1, colorS, colorE;//ÆğµãÏÂ±ê£¬ÖÕµãÏÂ±ê£¬ÆğµãÑÕÉ«£¬ÖÕµãÑÕÉ«
-	for (int arc = INNER; arc <= OUTER; arc++) {//ÄÚÍâ»¡¸÷Ñ­»·Ò»´Î
-		if (loopStart[arc] != -1) { //ÅĞ¶Ïµ±Ç°»¡ÉÏÓĞµã
-			for (int dir = 1; dir <= 23; dir += 22) { // Ë³Ê±Õë/ÄæÊ±Õë
-				s = loopStart[arc];
-				e = (s + dir) % 24;
-				colorS = *loop[arc][s];//±£ÁôÆğµãÑÕÉ«£¬ÆğµãÖÃ¿Õ£¬ºÍ¾Éº¯ÊıË¼Â·Ò»Ñù
-				*loop[arc][s] = 0;
-				for (int i = 0; i < 24; i++, e = (e + dir) % 24) {
-					colorE = *loop[arc][e];
-					if (*loop[arc][e]) {
-						arcStepProc(arc == OUTER, s, e); //
-					}
-				}
-				if (!*loop[arc][s]) *loop[arc][s] = colorS;
-			}
-		}
-	}
-
-	//Éú³É×ß×Ó×Å·¨
-	for (int i = 0; i < 6; i++) {
-		for (int j = 0; j < 6; j++) {
-			pointProc(i, j);
-			if (position[i][j]) {
-				for (int x = -1; x <= 1; x++) {
-					for (int y = -1; y <= 1; y++) {
-						if (0 <= x + i && x + i < 6 &&
-							0 <= y + j && y + j < 6 &&
-							position[x + i][y + j] == 0) {
-							stepProc(i, j, x + i, y + j);
-
-						}
-					}
+				else if (*loop[arc][index] == 3 - foundColor) {
+					loopStart[arc][3 - foundColor] = index;
+					loopStart[arc][NOCHESS] = min(loopStart[arc][BLACK], loopStart[arc][RED]);
+					break;
 				}
 			}
 		}
 	}
 }
 
+void ChessBoard::attachLoopList() {
+	for (int i = 0; i < 24; i++) {
+		for (int arc = INNER; arc <= OUTER; arc++) {
+			loop[arc][i] = &(this->position[arcLoop[arc][i][PX]][arcLoop[arc][i][PY]]);
+		}
+	}
+}
+//æ£‹ç›˜çš„ç§»åŠ¨
 void ChessBoard::move(int fX, int fY, int tX, int tY) {
-	moves.push(CHESSMOVE(
-		fX, fY, tX, tY, 
-		isBlackTurn ? BLACK : RED, 
-		!position[tX][tY])
-	);
-	if (position[tX][tY]) position[tX][tY] == BLACK ? bNum-- : rNum--;
-	position[tX][tY] = position[fX][fY];
-	position[fX][fY] = NOCHESS;
+	CHESSMOVE move(
+		fX, fY, tX, tY,
+		isBlackTurn ? BLACK : RED,
+		!position[tX][tY]);
+	this->move(move);
 	isBlackTurn = !isBlackTurn;
 }
-
+//é‡è½½ æ£‹ç›˜çš„ç§»åŠ¨
 void ChessBoard::move(CHESSMOVE move) {
-	this->move(move.From.x, move.From.y, move.To.x, move.To.y);
-}
+	BYTE sColor = position[move.From.x][move.From.y];
+	BYTE eColor = position[move.To.x][move.To.y];
+	if (eColor)
+		eColor == BLACK ? bNum-- : rNum--;
 
+	rawId -= idList[move.From.x][move.From.y][sColor];
+	rawId -= idList[move.To.x][move.To.y][eColor];
+	rawId += idList[move.To.x][move.To.y][sColor];
+
+	position[move.To.x][move.To.y] = position[move.From.x][move.From.y];
+	position[move.From.x][move.From.y] = NOCHESS;
+
+	isBlackTurn = !isBlackTurn;
+	moves.push(move);
+
+	chkLoopStart();
+}
+//è¿”å›ç§»åŠ¨å‰ä¸€æ­¥æ£‹ç›˜çš„çŠ¶æ€
 void ChessBoard::unMove() {
-	CHESSMOVE lastMove = moves.top();
+	CHESSMOVE move = moves.top();
 	moves.pop();
-	position[lastMove.From.x][lastMove.From.y] = position[lastMove.To.x][lastMove.To.y];
-	if (!lastMove.isMove) {
-		position[lastMove.To.x][lastMove.To.y] = 3 - position[lastMove.To.x][lastMove.To.y];
-		position[lastMove.To.x][lastMove.To.y] == BLACK ? bNum++ : rNum++;
-	}
-}
 
-int ChessBoard::finishedMoves() {
+	BYTE sColor = move.Side;
+	BYTE eColor = move.isMove ? 0 : 3 - sColor;
+
+	rawId -= idList[move.To.x][move.To.y][sColor];
+	rawId += idList[move.From.x][move.From.y][sColor];
+	if (eColor) {
+		eColor == BLACK ? bNum++ : rNum++;
+		rawId += idList[move.To.x][move.To.y][eColor];
+	}
+
+	position[move.To.x][move.To.y] = eColor;
+	position[move.From.x][move.From.y] = sColor;
+
+	isBlackTurn = !isBlackTurn;
+
+	chkLoopStart();
+}
+//ç”±èµ°æ–¹å¾—åˆ°æ£‹ç›˜çš„id
+ID_TYPE ChessBoard::getId() {
+	return isBlackTurn ? getIdRaw() | SIG_BLACK : getIdRaw();
+}
+//æ­£å¸¸å¾—åˆ°id
+ID_TYPE ChessBoard::getIdRaw() {
+	return rawId;
+}
+//ç›´æ¥è®¡ç®—å‡ºæ£‹ç›˜idï¼Œæ²¡æœ‰ä¼˜åŒ–çš„æƒ…å†µä¸‹
+ID_TYPE ChessBoard::getIdNormal() {
+	ID_TYPE id = 0;
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 6; j++) {
+			id += idList[i][j][BLACK];
+			id += idList[i][j][position[i][j]];
+		}
+	}
+	return id;
+}
+//å­˜å‚¨ä¸€å…±èµ°äº†å¤šå°‘æ­¥ï¼Œmoveä¸ºæ ˆ
+int ChessBoard::getMoves() {
 	return moves.size();
 }
-
+//åˆ¤æ–­æ¸¸æˆæ˜¯å¦ç»“æŸ
 int ChessBoard::isGameOver() {
-	if (bNum&&rNum) 
-		return false;
-	return bNum ? BLACK : RED;
+	if (bNum&&rNum)
+		return 0;
+	return bNum ? B_WIN : R_WIN;//ä¸¤ä¸ªå…¨å±€å˜é‡
 }
-
-int ChessBoard::getPValue(bool isBlack) {
-	return isBlack ? bPValue : rPValue;
-}
-
-int ChessBoard::getAValue(bool isBlack) {
-	return isBlack ? bAValue : rAValue;
-}
-
-int ChessBoard::getMValue(bool isBlack) {
-	return isBlack ? bMValue : rMValue;
-}
-
-int ChessBoard::getPosValue(bool isBlack) {
-	return isBlack ? bPosValue : rPosValue;
-}
-
+//å¾—åˆ°æ£‹ç›˜çº¢é»‘å­çš„ä¸ªæ•°
 int ChessBoard::getNums(bool isBlack) {
 	return isBlack ? bNum : rNum;
 }
-
-int ChessBoard::getArcValue(bool isBlack)
-{
-	int BArcNum = 0, RArcNum = 0, NoArcNum = 0;
-	int i;
-	for (i = 1; i < 5; i++) {
-		if (position[i][0] == 1) {
-			BArcNum++;
-		} else if (position[i][0] == 2) {
-			RArcNum++;
-		} else {
-			NoArcNum++;
-		}
-	}
-	for (i = 1; i < 5; i++) {
-		if (position[0][i] == 1) {
-			BArcNum++;
-		} else if (position[0][i] == 2) {
-			RArcNum++;
-		} else {
-			NoArcNum++;
-		}
-	}
-	for (i = 1; i < 5; i++) {
-		if (position[i][5] == 1) {
-			BArcNum++;
-		} else if (position[i][5] == 2) {
-			RArcNum++;
-		} else {
-			NoArcNum++;
-		}
-	}
-	for (i = 1; i < 5; i++) {
-		if (position[5][i] == 1) {
-			BArcNum++;
-		} else if (position[5][i] == 2) {
-			RArcNum++;
-		} else {
-			NoArcNum++;
-		}
-	}
-	if (isBlackTurn) {
-		return BArcNum * 5 + NoArcNum * 5;
-	} else {
-		return RArcNum * 5 + NoArcNum * 5;
-	}
+//å­˜å‚¨ä¸€å…±èµ°äº†å¤šå°‘æ­¥ï¼Œmoveä¸ºæ ˆ
+int ChessBoard::getSearchMoves() {
+	return moves.size();
 }
-
+//å°†æ£‹å±€å½¢åŠ¿æ‹·è´è‡³pos
+void ChessBoard::getPosition(BYTE pos[][6]) {
+	memcpy(pos, position, sizeof(BYTE) * 36);
+}
+//è¾“å‡ºæ£‹å±€å½¢åŠ¿
+void ChessBoard::outputPosition()
+{
+	CString temp;
+	temp.Format(
+		"%d %d %d %d %d %d\n%d %d %d %d %d %d\n%d %d %d %d %d %d\n%d %d %d %d %d %d\n%d %d %d %d %d %d\n%d %d %d %d %d %d",position[0][0],position[0][1],position[0][2],position[0][3],position[0][4],position[0][5], position[1][0], position[1][1], position[1][2], position[1][3], position[1][4], position[1][5], position[2][0], position[2][1], position[2][2], position[2][3], position[2][4], position[2][5], position[3][0], position[3][1], position[3][2], position[3][3], position[3][4], position[3][5], position[4][0], position[4][1], position[4][2], position[4][3], position[4][4], position[4][5], position[5][0], position[5][1], position[5][2], position[5][3], position[5][4], position[5][5]);
+	AfxMessageBox(temp);
+}
+//è¿”å›æ£‹ç›˜çš„è¡ŒæŒ‡é’ˆ
 BYTE * ChessBoard::operator[](int x) {
 	return position[x];
 }
-
-BYTE & ChessBoard::operator[](CHESSNAMPOS pos)
-{
+//è¿”å›æŸç‚¹çš„æ£‹çš„ç±»å‹
+BYTE & ChessBoard::operator[](CHESSNAMPOS pos) {
 	return position[pos.x][pos.y];
+}
+
+BYTE& ChessBoard::operator()(int arc, int index) {
+	return *loop[arc][index];
+	// TODO: Ú´Ë´ return 
+}
+
+BYTE& ChessBoard::pInner(int index) {
+	return *loop[INNER][index];
+}
+
+BYTE& ChessBoard::pOuter(int index) {
+	return *loop[OUTER][index];
+}
+
+BYTE& ChessBoard::pArc(int arc, int index) {
+	return *loop[arc][index];
 }
