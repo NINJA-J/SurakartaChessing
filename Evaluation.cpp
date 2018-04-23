@@ -252,42 +252,40 @@ int CEvaluation::GetArcValue(BYTE position[6][6], BOOL IsBlackturn)
 }
 
 bool CEvaluation::getBoardValue(ID_TYPE id, int depth, int &alpha, int &beta, int & value) {
-#ifdef USE_MAP
-#ifdef USE_MULTI_PROCESS
-	unique_lock<mutex> lock(mapMutex);
-#endif
-	unordered_map<ID_TYPE, valUnion>::const_iterator iter = boardValue.find(id);
-	if (iter == boardValue.end()) return false;
-	if (iter->second.depth < depth) return false;
-	if (iter->second.value > beta) {
-		alpha = beta - 1;
-		return false;
-	} else if (iter->second.value > alpha) {
-		alpha = iter->second.value;
-		return false;
-	}else{
+	if (mv != notUse) {
+//		unique_lock<mutex> lock(mapMutex);
+		unordered_map<ID_TYPE, valUnion>::const_iterator iter = boardValue.find(id);
+		if (iter == boardValue.end()) return false;
+
+		if (mv == depthEqual&&iter->second.depth != depth) return false;
+		if (mv == depthHigher&&iter->second.depth < depth) return false;
+
+		if (iter->second.value >= beta)
+			alpha = beta - 1;
+		else if (iter->second.value > alpha)
+			alpha = iter->second.value;
 		return false;
 	}
-#else
-	return false;
-#endif
+	else {
+		return false;
+	}
 }
 
 int CEvaluation::addBoardValue(ID_TYPE id, int depth,int alpha,int beta, int value) {
-#ifdef USE_MAP
-#ifdef USE_MULTI_PROCESS
-	unique_lock<mutex> lock(mapMutex);
-#endif
-	unordered_map<ID_TYPE, valUnion>::iterator iter = boardValue.find(id);
-	if (iter == boardValue.end())
-		boardValue.insert({ id,valUnion(depth,alpha,beta,value) });
-	else {
-		iter->second.depth = depth;
-		iter->second.alpha = alpha;
-		iter->second.beta = beta;
-		iter->second.value = value;
+	if (mv != notUse) {
+//		unique_lock<mutex> lock(mapMutex);
+		unordered_map<ID_TYPE, valUnion>::iterator iter = boardValue.find(id);
+		if (iter == boardValue.end())
+			boardValue.insert({ id,valUnion(depth,alpha,beta,value) });
+		else if (
+			(mv == depthEqual&&iter->second.depth == depth) ||
+			(mv == depthHigher&&iter->second.depth >= depth)) {
+			iter->second.depth = max(depth, iter->second.depth);
+			iter->second.alpha = alpha;
+			iter->second.beta = beta;
+			iter->second.value = value;
+		}
 	}
-#endif
 	return value;
 }
 

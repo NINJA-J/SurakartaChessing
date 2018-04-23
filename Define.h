@@ -51,7 +51,7 @@
 typedef long long int ID_TYPE;
 
 /********** NegaScout²ÎÊý **********/
-//#define USE_MULTI_PROCESS
+#define USE_MULTI_PROCESS
 #define USE_NEW_ABTREE
 
 #define PROC_DEPTH 1

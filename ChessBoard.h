@@ -1,6 +1,9 @@
 #pragma once
 
+#ifndef NOT_USE_AFX
 #include "stdafx.h"
+#endif
+
 #include "Define.h"
 #include <stack>
 

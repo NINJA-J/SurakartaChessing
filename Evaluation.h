@@ -123,6 +123,13 @@ public:
 	valUnion() {};
 };
 
+typedef enum mapVersion {
+	notUse,
+	current,
+	depthEqual,
+	depthHigher
+} MapVersion;
+
 class CEvaluation {
 public:
 	CEvaluation();
@@ -140,6 +147,8 @@ public:
 	int getArcValue(ChessBoard &board, bool isBlack);
 
 	void setWeightVector(WeightVector &wv);
+	void setMapVersion(MapVersion _mv = current) { mv = _mv; }
+	void setUseMultiProcess(bool use = true) { useMultiProcess = use; }
 
 private:
 	ValueVector bValue, rValue;
@@ -155,6 +164,11 @@ private:
 	static mutex mapMutex;
 
 	static const int posScore[3][6][6];
+
+	bool useMap = false;
+	bool useMultiProcess = false;
+
+	MapVersion mv;
 };
 
 #endif // !defined(AFX_Evaluation_H__D5138E45_7853_40AB_80A8_5D7BB3E091F8__INCLUDED_)

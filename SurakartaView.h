@@ -16,7 +16,7 @@ typedef struct _movechess
 {
 	BYTE nChessID;
 	POINT ptMovePoint;
-	
+
 }MOVECHESS;
 
 class CSurakartaView : public CView
@@ -25,7 +25,7 @@ protected: // create from serialization only
 	CSurakartaView();
 	DECLARE_DYNCREATE(CSurakartaView)
 
-// Attributes
+	// Attributes
 public:
 	CSurakartaDoc* GetDocument();
 	CPoint m_Black;
@@ -41,35 +41,38 @@ public:
 	int m_ni;
 	int m_nj;
 	BOOL m_begin;
-	int m_nsecond,m_nminute,m_nhour;
+	int m_nsecond, m_nminute, m_nhour;
 	CString str;
-    BOOL m_isPlayerBlack;
+	BOOL m_isPlayerBlack;
 	BOOL m_isPlayerFirst;
 	BOOL m_isPlayerTurn;
 	int GameMode;
 	int BackStep;
-// Operations
+	// Operations
 public:
 
-// Overrides
+	// Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CSurakartaView)
-	public:
+public:
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-	protected:
+protected:
 	virtual BOOL OnPreparePrinting(CPrintInfo* pInfo);
 	virtual void OnBeginPrinting(CDC* pDC, CPrintInfo* pInfo);
 	virtual void OnEndPrinting(CDC* pDC, CPrintInfo* pInfo);
 	//}}AFX_VIRTUAL
 
-// Implementation
+	// Implementation
 public:
+	void isBlackTurn(UINT nFlags);
+	void isRedTurn(UINT nFlags);
+
 	virtual ~CSurakartaView();
 public:
 	void Inverse(BYTE color[6][6]);
 	void DrawChess(BYTE color[6][6]);
-	
+
 #ifdef _DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
@@ -77,7 +80,7 @@ public:
 
 protected:
 
-// Generated message map functions
+	// Generated message map functions
 protected:
 	//{{AFX_MSG(CSurakartaView)
 	afx_msg void OnBegin();
@@ -96,13 +99,15 @@ private:
 	MOVECHESS m_MoveChess;//保存当前被拖拽的棋子的结构
 	POINT m_ptMoveChess;//用于保存当前被拖拽的棋子的位置
 	CSearchEngine *m_pSE;//搜索引擎的指针
-	BOOL RedEat;	
+	BOOL RedEat;
 	CHESSMOVE m_BestMove;
 };
 
 #ifndef _DEBUG  // debug version in SurakartaView.cpp
 inline CSurakartaDoc* CSurakartaView::GetDocument()
-   { return (CSurakartaDoc*)m_pDocument; }
+{
+	return (CSurakartaDoc*)m_pDocument;
+}
 #endif
 
 /////////////////////////////////////////////////////////////////////////////

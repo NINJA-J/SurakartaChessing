@@ -54,8 +54,8 @@ typedef struct _task {
 } Task;
 
 //#define ABDebug
-class CNegaScout : 
-	public CSearchEngine 
+class CNegaScout :
+	public CSearchEngine
 {
 public:
 	CNegaScout();
@@ -64,14 +64,21 @@ public:
 	CNegaScout(BYTE position[6][6], bool isBlackTurn);
 	CNegaScout(BYTE position[6][6], bool isBlackTurn, CHESSMOVE move);
 	//CNegaScout(int k);
-	virtual ~CNegaScout();
-	virtual CHESSMOVE SearchAGoodMove(BYTE position[6][6],bool m_isPlayerBlack);
+	~CNegaScout();
+	CHESSMOVE searchAGoodMove();
+	CHESSMOVE SearchAGoodMove(BYTE position[6][6], bool m_isPlayerBlack);
 
 	void setPosition(BYTE position[6][6], bool isBlackTurn);
-	void setPlayerSide(bool isBlackPlay) { this->isBlackPlay = isBlackPlay; };
-	void setSearchMethod(int sMethod, bool useMProcess) { searchMethod = sMethod; uMultiProcess = useMProcess; };
-	void setWeightVector(WeightVector &wv) { m_pEval.setWeightVector(wv); };
-	//void move(CHESSMOVE move);
+	void setPlayerSide(bool isBlackPlay) { this->isBlackPlay = isBlackPlay; }
+	void setMethod(int sMethod) { searchMethod = sMethod; }
+	void setWeightVector(WeightVector &wv) { m_pEval.setWeightVector(wv); }
+	void setUseMultiProcess(bool use = true) { uMultiProcess = use; }
+	void setUseMapVersion(MapVersion v = current) { m_pEval.setMapVersion(v); }
+	void setSearchDepth(int depth) { searchDepth = depth; }
+
+	double getLastSearchTime() { return lastSearchTime; }
+	CHESSMOVE getBestMove() { return bestMove; }
+	int getLastScore() { return lastScore; }
 
 	Task createTask();
 	bool useMultiProcess(int depth);
@@ -87,14 +94,16 @@ public:
 	int negaScoutPVS(int depth = SEARCH_DEPTH, int alpha = MIN_VALUE, int beta = MAX_VALUE);
 	int negaScoutBT(int depth = SEARCH_DEPTH, int alpha = MIN_VALUE, int beta = MAX_VALUE);
 	int negaScoutMTD(int depth = SEARCH_DEPTH, int alpha = MIN_VALUE, int beta = MAX_VALUE);
-
-	//	static void negaScoutMinWin(int kidTreeValue, ChessBoard chessBoard, int depth, bool isBlackPlay, int alpha = MIN_VALUE, int beta = MAX_VALUE);
 private:
     CHESSMOVE m_bestMove;
 	ChessBoard chessBoard;
 	bool isBlackPlay;
+
 	int searchMethod = PVS;
 	int searchDepth = SEARCH_DEPTH;
+	double lastSearchTime;
+	int lastScore;
+
 	bool uMultiProcess = false;
 };
 
