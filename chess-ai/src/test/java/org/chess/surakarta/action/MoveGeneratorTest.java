@@ -33,12 +33,12 @@ public class MoveGeneratorTest {
                 {0, 0, 1, 2, 0, 2},
                 {2, 2, 2, 2, 0, 2}
         }), Board.BLACK);
-        moves.stream().
-        Assert.assertEquals(Collections.li moves, Arrays.asList(
-                Move.as(1, 4, 0, 4, true),
-                Move.as(3, 4, 4, 5, true),
-                Move.as(4, 2, 5, 1, true),
-                Move.as(1, 1, 5, 1, true)
-        ));
+        Assert.assertEquals(moves.get(0), Move.as(1, 4, 0, 4, true));
+        Assert.assertEquals(moves.get(1), Move.as(3, 4, 4, 5, true));
+        Assert.assertEquals(moves.get(2), Move.as(4, 2, 5, 1, true));
+        Assert.assertEquals(moves.get(3), Move.as(1, 1, 5, 1, true));
+        Assert.assertEquals(moves.get(4), Move.as(3, 4, 5, 3, true));
+        Assert.assertEquals(moves.get(5), Move.as(3, 4, 5, 2, true));
+        Assert.assertFalse(moves.get(6).isArc());
     }
 }

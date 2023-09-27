@@ -51,4 +51,13 @@ public class Move {
     public int hashCode() {
         return Objects.hash(from, to, arc);
     }
+
+    @Override
+    public String toString() {
+        return "Move{" +
+                "from=" + from +
+                ", to=" + to +
+                ", arc=" + arc +
+                '}';
+    }
 }

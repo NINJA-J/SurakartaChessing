@@ -45,4 +45,12 @@ public class Pos {
     public int hashCode() {
         return hash(x, y);
     }
+
+    @Override
+    public String toString() {
+        return "Pos{" +
+                "x=" + x +
+                ", y=" + y +
+                '}';
+    }
 }

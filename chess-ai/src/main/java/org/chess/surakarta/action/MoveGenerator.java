@@ -45,47 +45,32 @@ public class MoveGenerator {
     public List<Move> availableMove(Board board, int side) {
         List<Move> moves = new ArrayList<>();
         for (int arc = 0; arc <= 1; arc++) {
-            int arcS = -1;
-            for (int i = 0; i < 24; i++) {
-                int[] p = arcChain[arc][i];
-                if (board.getPos(p) != Board.EMPTY) {
-                    arcS = i;
+            int arcS;
+            for (arcS = 0; arcS < 24; arcS++) {
+                if (board.getPos(arcChain[arc][arcS]) != Board.EMPTY) {
                     break;
                 }
             }
-            if (arcS == -1) {
+            // No points on arc
+            if (arcS == 24) {
                 continue;
             }
-            int indS = arcS;
-            int colorS = board.getPos(arcChain[arc][arcS]), colorE;
-            board.setPos(arcChain[arc][arcS], Board.EMPTY);
-            for (int i = arcS+1; i < 24; i++) {
-                colorE = board.getPos(arcChain[arc][i]);
-                if (colorE == Board.EMPTY) {
+            int indL = -1, indS = arcS, indE;
+            for (indE = arcS + 1; indE < 24; indE++) {
+                if (board.getPos(arcChain[arc][indE]) == Board.EMPTY) {
                     continue;
                 }
-                if (colorS != colorE && indS / 6 != i / 6) {
-                    if (colorS == side) {
-                        moves.add(Move.as(arcChain[arc][indS], arcChain[arc][i], true));
-                    } else {
-                        moves.add(Move.as(arcChain[arc][i], arcChain[arc][indS], true));
-                    }
+
+                // return true if not on cross
+                if (chkAddArcMove(board, side, moves, arc, indL, indS, indE)) {
+                    indL = indS;
+                    indS = indE;
                 }
-                board.setPos(arcChain[arc][indS], colorS);
-                colorS = colorE;
-                board.setPos(arcChain[arc][i], Board.EMPTY);
-                indS = i;
             }
-            if (arcS != indS) {
-                colorS = board.getPos(arcChain[arc][arcS]);
-                colorE = board.getPos(arcChain[arc][indS]);
-                if (colorS != colorE && indS / 6 != arcS/6) {
-                    if (colorS == side) {
-                        moves.add(Move.as(arcChain[arc][arcS], arcChain[arc][indS], true));
-                    } else {
-                        moves.add(Move.as(arcChain[arc][indS], arcChain[arc][arcS], true));
-                    }
-                }
+            chkAddArcMove(board, side, moves, arc, indL, indS, arcS);
+            // if only 2 chess on arc, may exist same move
+            if (moves.size() > 1 && moves.get(moves.size()-1).equals(moves.get(moves.size()-2))) {
+                moves.remove(moves.size()-1);
             }
         }
         for (int i = 0; i < 6; i++) {
@@ -96,7 +81,6 @@ public class MoveGenerator {
                             if (0 <= x && x < 6 && 0 <= y && y < 6 &&
                                     board.getPos(x, y) == Board.EMPTY) {
                                 moves.add(new Move(new Pos(i, j), new Pos(x, y), false));
-
                             }
                         }
                     }
@@ -104,5 +88,33 @@ public class MoveGenerator {
             }
         }
         return moves;
+    }
+    private boolean chkAddArcMove(Board board, int side, List<Move> moves, int arc, int indL, int indS, int indE) {
+        // indL --- indS(cross) ^^^ indE[indS(cross)]
+        // Check indL->indE
+        if (isSamePoint(indS, indE, arc)) {
+            chkAddMove(board, side, moves, arc, indL, indE, true);
+            return false;
+        } else {
+            chkAddMove(board, side, moves, arc, indS, indE, false);
+            return true;
+        }
+    }
+
+    private void chkAddMove(Board board, int side, List<Move> moves, int arc, int indS, int indE, boolean cross) {
+        int colorS = board.getPos(arcChain[arc][indS]);
+        if (colorS != board.getPos(arcChain[arc][indE]) && indS / 6 != indE / 6) {
+            if (colorS != side) {
+                moves.add(Move.as(arcChain[arc][indE], arcChain[arc][indS], true));
+            } else if (!cross) {
+                moves.add(Move.as(arcChain[arc][indS], arcChain[arc][indE], true));
+            }
+        }
+    }
+
+    private boolean isSamePoint(int arcIndex1, int arcIndex2, int arc) {
+        int[] a = arcChain[arc][arcIndex1];
+        int[] b = arcChain[arc][arcIndex2];
+        return board2arcIndex[arc][a[0]][a[1]] == board2arcIndex[arc][b[0]][b[1]];
     }
 }

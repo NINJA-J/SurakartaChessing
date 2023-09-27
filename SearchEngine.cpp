@@ -26,7 +26,7 @@ CSearchEngine::~CSearchEngine()
 	delete m_pMG;
 	delete m_pEval;
 }
-BYTE CSearchEngine::MakeMove(CHESSMOVE *move)//ÓÉ´«ÈëµÄ×ß·¨¸Ä±äÆåÅÌ
+BYTE CSearchEngine::MakeMove(CHESSMOVE *move)//ç”±ä¼ å…¥çš„èµ°æ³•æ”¹å˜æ£‹ç›˜
 {
 	BYTE Side;
 	Side=CurPosition[move->To.x][move->To.y];
@@ -38,12 +38,12 @@ BYTE CSearchEngine::MakeMove(CHESSMOVE *move)//ÓÉ´«ÈëµÄ×ß·¨¸Ä±äÆåÅÌ
 }
 
 
-void CSearchEngine::UnMakeMove(CHESSMOVE *move ,BYTE nChessID) {//»Ö¸´ÆåÅÌ
+void CSearchEngine::UnMakeMove(CHESSMOVE *move ,BYTE nChessID) {//æ¢å¤æ£‹ç›˜
 	CurPosition[move->From.x][move->From.y]=CurPosition[move->To.x][move->To.y];
 	CurPosition[move->To.x][move->To.y]=nChessID;
 }
 
-int CSearchEngine::IsGameOver(BYTE position[6][6],int nDepth ) {//Î´½áÊø·µ»Ø0£¬½áÊø·µ»Ø¼«´ó/¼«Ğ¡Öµ
+int CSearchEngine::IsGameOver(BYTE position[6][6],int nDepth ) {//æœªç»“æŸè¿”å›0ï¼Œç»“æŸè¿”å›æå¤§/æå°å€¼
 {
 int i,j;
 BOOL RedWin=TRUE,BlackWin=TRUE;

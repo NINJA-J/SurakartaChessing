@@ -28,21 +28,21 @@ CEveluation::~CEveluation()
 int CEveluation::evaluate(BYTE position[6][6], BOOL IsBlackturn)
 {
 
-	//ÄãĞèÒªÔÚÕâ¸öº¯ÊıÀïÌí¼ÓÓĞÈçÏÂ¹¦ÄÜµÄ´úÂë£º
-	//1.¿ÉÒÔÖªµÀÆåÅÌÉÏµĞ·½ºÍÎÒ·½Æå×ÓµÄÊıÁ¿
-	//2.¿ÉÒÔµÃµ½Ë«·½ËùÕ¼Î»ÖÃµÄ·ÖÖµ£¬Ã¿¸öÎ»ÖÃ¶ÔÓ¦µÄ·ÖÖµ¿É²Î¿¼Ïà¹ØÂÛÎÄ
-	//3.¿ÉÒÔµÃµ½ÎÒ·½Æå×Ó¿ÉÒÆ¶¯·ÖÖµ
-	//4.¾¡Á¿¼ÓÒ»Ğ©ÆäËû¹ÀÖµ·½·¨
+	//ä½ éœ€è¦åœ¨è¿™ä¸ªå‡½æ•°é‡Œæ·»åŠ æœ‰å¦‚ä¸‹åŠŸèƒ½çš„ä»£ç ï¼š
+	//1.å¯ä»¥çŸ¥é“æ£‹ç›˜ä¸Šæ•Œæ–¹å’Œæˆ‘æ–¹æ£‹å­çš„æ•°é‡
+	//2.å¯ä»¥å¾—åˆ°åŒæ–¹æ‰€å ä½ç½®çš„åˆ†å€¼ï¼Œæ¯ä¸ªä½ç½®å¯¹åº”çš„åˆ†å€¼å¯å‚è€ƒç›¸å…³è®ºæ–‡
+	//3.å¯ä»¥å¾—åˆ°æˆ‘æ–¹æ£‹å­å¯ç§»åŠ¨åˆ†å€¼
+	//4.å°½é‡åŠ ä¸€äº›å…¶ä»–ä¼°å€¼æ–¹æ³•
 
 	bValue = ValueVector()
 
-	 BlackValue=0,RedValue=0;//ºìºÚ·½×ÜµÄÆÀ¹ÀÖµ
+	 BlackValue=0,RedValue=0;//çº¢é»‘æ–¹æ€»çš„è¯„ä¼°å€¼
 	 BProtectValue=0,RProtectValue=0; 
 	 BAttactValue=0,RAttactValue=0;
-	 RMoveValue=0,BMoveValue=0;//ÓÃÀ´±íÊ¾¿ÉÒÆ¶¯·ÖÖµ
+	 RMoveValue=0,BMoveValue=0;//ç”¨æ¥è¡¨ç¤ºå¯ç§»åŠ¨åˆ†å€¼
 	 BPosValue=0,RPosValue=0;
-	 BNum=0,RNum=0;//ºì·½£¬ºÚ·½Æå×ÓÊıÁ¿
-	 RArcValue=0, BArcValue=0;//Õ¼»¡Öµ
+	 BNum=0,RNum=0;//çº¢æ–¹ï¼Œé»‘æ–¹æ£‹å­æ•°é‡
+	 RArcValue=0, BArcValue=0;//å å¼§å€¼
 	 int i,j;
 	
 	 m_pMg->AnalysisAttackInfo(position, BNum, BAttactValue, BProtectValue, BMoveValue, RNum, RAttactValue, RProtectValue, RMoveValue);
@@ -56,13 +56,13 @@ int CEveluation::evaluate(BYTE position[6][6], BOOL IsBlackturn)
 		RArcValue = GetArcValue(position, IsBlackturn);
 		BArcValue = GetArcValue(position, 1);
 	}
-	BlackValue = BNum * 6 + BMoveValue * 1 + BAttactValue * 2 + BPosValue * 1 + BArcValue * 1;//abcd·Ö±ğ±íÊ¾¸÷¸öÆÀ·ÖÒòËØµÄÈ¨Öµ
+	BlackValue = BNum * 6 + BMoveValue * 1 + BAttactValue * 2 + BPosValue * 1 + BArcValue * 1;//abcdåˆ†åˆ«è¡¨ç¤ºå„ä¸ªè¯„åˆ†å› ç´ çš„æƒå€¼
 	RedValue = RNum * 6 + RMoveValue * 1 + RAttactValue * 2 + RPosValue * 1 + RArcValue * 1;
 
 
 
-	if (IsBlackturn)//ÁË½â¼«´ó¼«Ğ¡ËÑË÷Ô­Àí£¬Àí½âIsBlackturn Õâ¸ö±äÁ¿ÊÇ¸ÉÊ²Ã´ÓÃµÄºÍÆÀ¹ÀÖµµÄÒâÒå£¬È»ºóÈ·¶¨returnµÄÊÇÄÄ¸ö±äÁ¿
-		return BlackValue-RedValue;//·µ»ØµÄÊÇÒ»¸öËæ»úÊı£¬Ö»ÊÇÎªÁËÈÃ³ÌĞòÄÜÔËĞĞ
+	if (IsBlackturn)//äº†è§£æå¤§æå°æœç´¢åŸç†ï¼Œç†è§£IsBlackturn è¿™ä¸ªå˜é‡æ˜¯å¹²ä»€ä¹ˆç”¨çš„å’Œè¯„ä¼°å€¼çš„æ„ä¹‰ï¼Œç„¶åç¡®å®šreturnçš„æ˜¯å“ªä¸ªå˜é‡
+		return BlackValue-RedValue;//è¿”å›çš„æ˜¯ä¸€ä¸ªéšæœºæ•°ï¼Œåªæ˜¯ä¸ºäº†è®©ç¨‹åºèƒ½è¿è¡Œ
 	else
 		return RedValue-BlackValue;
 }

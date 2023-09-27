@@ -41,8 +41,17 @@ public class Board {
             throw new RuntimeException("Invalid move to argument, to is same color");
         } else {
             chessCount[board[m.getTo().getY()][m.getTo().getX()]]--;
-            board[m.getTo().getY()][m.getTo().getX()] = board[m.getFrom().getY()][m.getFrom().getX()];
-            board[m.getFrom().getY()][m.getFrom().getX()] = EMPTY;
+            setPos(m.getTo(), getPos(m.getFrom()));
+            setPos(m.getFrom(), EMPTY);
+        }
+    }
+
+    public void unmove(Move m) {
+        setPos(m.getFrom(), getPos(m.getTo()));
+        if (m.isArc()) {
+            setPos(m.getTo(), 3 - getPos(m.getTo()));
+        } else {
+            setPos(m.getTo(), EMPTY);
         }
     }
 
