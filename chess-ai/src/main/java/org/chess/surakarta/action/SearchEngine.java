@@ -65,7 +65,7 @@ public class SearchEngine implements Search {
             return winSide == curSide ? winValue : -winValue;
         }//终局
         if (depth <= 0) {
-            return evaluator.value(board, curSide);//叶结点
+            return evaluator.value(board);//叶结点
         }
 
         List<Move> moves = moveGenerator.availableMove(board, curSide);

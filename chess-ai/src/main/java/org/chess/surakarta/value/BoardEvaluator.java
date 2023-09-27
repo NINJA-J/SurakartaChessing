@@ -4,7 +4,7 @@ import org.chess.surakarta.action.MoveGenerator;
 import org.chess.surakarta.entity.Board;
 import org.chess.surakarta.entity.Move;
 
-public class BoardEvaluator implements Evaluator {
+public class BoardEvaluator implements Evaluator<Board> {
     private static final int[][] DEFAULT_BOARD_VALUE = new int[][]{
             {5, 20, 20, 20, 20, 5},
             {20, 30, 50, 50, 30, 20},
@@ -29,7 +29,7 @@ public class BoardEvaluator implements Evaluator {
     }
 
     @Override
-    public int value(Board board, int side) {
+    public int value(Board board) {
         int posValue = 0, moveValue = 0, attachValue = 0, arcValue = 0;
         int numValue = board.getCount(Board.BLACK) - board.getCount(Board.RED);
 
@@ -60,6 +60,6 @@ public class BoardEvaluator implements Evaluator {
         }
 
         int value = numValue * 6 + moveValue + attachValue * 2 + posValue + arcValue;
-        return side == Board.BLACK ? value : -value;
+        return self == Board.BLACK ? value : -value;
     }
 }

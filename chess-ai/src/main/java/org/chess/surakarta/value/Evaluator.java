@@ -1,7 +1,5 @@
 package org.chess.surakarta.value;
 
-import org.chess.surakarta.entity.Board;
-
-public interface Evaluator {
-    int value(Board board, int side);
+public interface Evaluator<C> {
+    int value(C board);
 }

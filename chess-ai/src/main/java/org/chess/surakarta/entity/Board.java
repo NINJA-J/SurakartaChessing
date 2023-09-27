@@ -9,6 +9,8 @@ public class Board {
     public static final int RED = 2;
     private final int board[][] = new int[6][6];
 
+    private boolean self = true;
+
     public static final int[][] DEFAULT_INIT = new int[][]{
             {1, 1, 1, 1, 1, 1},
             {1, 1, 1, 1, 1, 1},
@@ -43,6 +45,7 @@ public class Board {
             chessCount[board[m.getTo().getY()][m.getTo().getX()]]--;
             setPos(m.getTo(), getPos(m.getFrom()));
             setPos(m.getFrom(), EMPTY);
+            self = !self;
         }
     }
 
@@ -53,6 +56,7 @@ public class Board {
         } else {
             setPos(m.getTo(), EMPTY);
         }
+        self = !self;
     }
 
     public void setPos(Pos pos, int color) {
@@ -77,6 +81,14 @@ public class Board {
 
     public int getCount(int color) {
         return chessCount[color];
+    }
+
+    public boolean isSelfTurn() {
+        return self;
+    }
+
+    public void setTurn(boolean self) {
+        this.self = self;
     }
 
 }
