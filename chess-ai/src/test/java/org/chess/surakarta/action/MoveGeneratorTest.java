@@ -32,7 +32,9 @@ public class MoveGeneratorTest {
                 {0, 0, 0, 0, 1, 0},
                 {0, 0, 1, 2, 0, 2},
                 {2, 2, 2, 2, 0, 2}
-        }), Board.BLACK);
+        }){{
+            setTurn(true);
+        }});
         Assert.assertEquals(moves.get(0), Move.as(1, 4, 0, 4, true));
         Assert.assertEquals(moves.get(1), Move.as(3, 4, 4, 5, true));
         Assert.assertEquals(moves.get(2), Move.as(4, 2, 5, 1, true));

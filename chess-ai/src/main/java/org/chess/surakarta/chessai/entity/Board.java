@@ -1,4 +1,4 @@
-package org.chess.surakarta.entity;
+package org.chess.surakarta.chessai.entity;
 
 public class Board {
 
@@ -7,9 +7,9 @@ public class Board {
     public static final int BLACK = 1;
 
     public static final int RED = 2;
-    private final int board[][] = new int[6][6];
+    private final int[][] board = new int[6][6];
 
-    private boolean self = true;
+    private boolean black = true;
 
     public static final int[][] DEFAULT_INIT = new int[][]{
             {1, 1, 1, 1, 1, 1},
@@ -21,31 +21,38 @@ public class Board {
     };
 
     public Board() {
-        this(DEFAULT_INIT);
+        this(DEFAULT_INIT, true);
     }
 
-    public Board(int[][] board) {
+    public Board(int[][] board, boolean isBlackTurn) {
         for (int i = 0; i < 6; i++) {
             System.arraycopy(board, 0, this.board, 0, 6);
             for (int j = 0; j < 6; j++) {
                 chessCount[board[i][j]]++;
             }
         }
+        this.black = isBlackTurn;
+    }
+
+    public Board copy() {
+        Board copy = new Board(this.board, this.black);
+        copy.setTurn(this.isBlackTurn());
+        return copy;
     }
 
     private final int[] chessCount = new int[3];
 
 
     public void move(Move m) {
-        if (board[m.getFrom().getY()][m.getFrom().getX()] == EMPTY) {
+        if (getPos(m.getFrom()) == EMPTY) {
             throw new RuntimeException("Invalid move from argument, from is empty");
-        } else if (board[m.getTo().getY()][m.getTo().getX()] == board[m.getFrom().getY()][m.getFrom().getX()]) {
+        } else if (getPos(m.getTo()) == getPos(m.getFrom())) {
             throw new RuntimeException("Invalid move to argument, to is same color");
         } else {
             chessCount[board[m.getTo().getY()][m.getTo().getX()]]--;
             setPos(m.getTo(), getPos(m.getFrom()));
             setPos(m.getFrom(), EMPTY);
-            self = !self;
+            black = !black;
         }
     }
 
@@ -56,7 +63,7 @@ public class Board {
         } else {
             setPos(m.getTo(), EMPTY);
         }
-        self = !self;
+        black = !black;
     }
 
     public void setPos(Pos pos, int color) {
@@ -83,12 +90,16 @@ public class Board {
         return chessCount[color];
     }
 
-    public boolean isSelfTurn() {
-        return self;
+    public boolean isBlackTurn() {
+        return black;
+    }
+
+    public int getSide() {
+        return black ? BLACK : RED;
     }
 
     public void setTurn(boolean self) {
-        this.self = self;
+        this.black = self;
     }
 
 }

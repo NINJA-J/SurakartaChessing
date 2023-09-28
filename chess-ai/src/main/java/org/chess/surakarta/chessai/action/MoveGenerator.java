@@ -1,13 +1,16 @@
-package org.chess.surakarta.action;
+package org.chess.surakarta.chessai.action;
 
-import org.chess.surakarta.entity.Board;
-import org.chess.surakarta.entity.Move;
-import org.chess.surakarta.entity.Pos;
+import org.chess.surakarta.chessai.entity.Board;
+import org.chess.surakarta.chessai.entity.Pos;
+import org.chess.surakarta.chessai.entity.Move;
+import org.chess.surakarta.chessai.value.BasicChessABPruneEvaluator;
+import org.chess.surakarta.chessai.value.Evaluator;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class MoveGenerator {
+
+    private Evaluator<Board> prunEvaluator = null;
     public static final int[][][] arcChain = new int[][][]{
             {   //内弧
                     {1, 0}, {1, 1}, {1, 2}, {1, 3}, {1, 4}, {1, 5},
@@ -42,6 +45,10 @@ public class MoveGenerator {
             }
     };
 
+    public List<Move> availableMove(Board board) {
+        return availableMove(board, board.getSide());
+    }
+
     public List<Move> availableMove(Board board, int side) {
         List<Move> moves = new ArrayList<>();
         for (int arc = 0; arc <= 1; arc++) {
@@ -69,8 +76,8 @@ public class MoveGenerator {
             }
             chkAddArcMove(board, side, moves, arc, indL, indS, arcS);
             // if only 2 chess on arc, may exist same move
-            if (moves.size() > 1 && moves.get(moves.size()-1).equals(moves.get(moves.size()-2))) {
-                moves.remove(moves.size()-1);
+            if (moves.size() > 1 && moves.get(moves.size() - 1).equals(moves.get(moves.size() - 2))) {
+                moves.remove(moves.size() - 1);
             }
         }
         for (int i = 0; i < 6; i++) {
@@ -89,6 +96,11 @@ public class MoveGenerator {
         }
         return moves;
     }
+
+    public void setPrunEvaluator(Evaluator<Board> evaluator) {
+        this.prunEvaluator = evaluator;
+    }
+
     private boolean chkAddArcMove(Board board, int side, List<Move> moves, int arc, int indL, int indS, int indE) {
         // indL --- indS(cross) ^^^ indE[indS(cross)]
         // Check indL->indE
@@ -116,5 +128,22 @@ public class MoveGenerator {
         int[] a = arcChain[arc][arcIndex1];
         int[] b = arcChain[arc][arcIndex2];
         return board2arcIndex[arc][a[0]][a[1]] == board2arcIndex[arc][b[0]][b[1]];
+    }
+
+    public Move bestMove(Board board) {
+        List<Move> moves = availableMove(board);
+        int min = Integer.MAX_VALUE;
+        Move best = null;
+        for (Move m : moves) {
+            board.move(m);
+            int v = prunEvaluator.value(board);
+            board.unmove(m);
+
+            if (min > v) {
+                min = v;
+                best = m;
+            }
+        }
+        return best;
     }
 }

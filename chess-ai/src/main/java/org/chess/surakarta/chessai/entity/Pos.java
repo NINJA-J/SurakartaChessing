@@ -1,4 +1,4 @@
-package org.chess.surakarta.entity;
+package org.chess.surakarta.chessai.entity;
 
 import static java.util.Objects.hash;
 

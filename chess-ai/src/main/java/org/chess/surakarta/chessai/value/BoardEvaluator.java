@@ -1,8 +1,8 @@
-package org.chess.surakarta.value;
+package org.chess.surakarta.chessai.value;
 
-import org.chess.surakarta.action.MoveGenerator;
-import org.chess.surakarta.entity.Board;
-import org.chess.surakarta.entity.Move;
+import org.chess.surakarta.chessai.action.MoveGenerator;
+import org.chess.surakarta.chessai.entity.Board;
+import org.chess.surakarta.chessai.entity.Move;
 
 public class BoardEvaluator implements Evaluator<Board> {
     private static final int[][] DEFAULT_BOARD_VALUE = new int[][]{
@@ -60,6 +60,6 @@ public class BoardEvaluator implements Evaluator<Board> {
         }
 
         int value = numValue * 6 + moveValue + attachValue * 2 + posValue + arcValue;
-        return self == Board.BLACK ? value : -value;
+        return board.isBlackTurn() ? value : -value;
     }
 }

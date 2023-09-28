@@ -1,9 +1,9 @@
-package org.chess.surakarta.action;
+package org.chess.surakarta.chessai.action;
 
-import org.chess.surakarta.entity.Board;
-import org.chess.surakarta.entity.Move;
-import org.chess.surakarta.value.BoardEvaluator;
-import org.chess.surakarta.value.Evaluator;
+import org.chess.surakarta.chessai.entity.Board;
+import org.chess.surakarta.chessai.value.BoardEvaluator;
+import org.chess.surakarta.chessai.value.Evaluator;
+import org.chess.surakarta.chessai.entity.Move;
 
 import java.util.List;
 
@@ -14,11 +14,11 @@ public class SearchEngine implements Search {
 
     @Override
     public Move bestMove(Board board, boolean isBlack) {
-
+        return null;
     }
 
     public Move searchBestMove(Board board, int side, int depth) {
-        List<Move> moves = moveGenerator.availableMove(board, side);
+        List<Move> moves = moveGenerator.availableMove(board);
         Move best = null;
         int maxVal = Integer.MIN_VALUE;
         for (Move m : moves) {
@@ -68,7 +68,7 @@ public class SearchEngine implements Search {
             return evaluator.value(board);//叶结点
         }
 
-        List<Move> moves = moveGenerator.availableMove(board, curSide);
+        List<Move> moves = moveGenerator.availableMove(board);
 
         for (Move move : moves) {
 //            x++;

@@ -1,4 +1,4 @@
-package org.chess.surakarta.entity;
+package org.chess.surakarta.chessai.entity;
 
 import java.util.Objects;
 
