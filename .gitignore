@@ -242,3 +242,16 @@ ModelManifest.xml
 .fake/
 
 .idea/*
+/out/
+/target/
+*.iml
+
+*/.mvn/*
+mvnw*
+
+chess-server/src/main/resources/static
+chess-server/src/main/resources/index.html
+chess-server/src/main/resources/asset-manifest.json
+chess-server/target
+chess-ai/target
+yarn.lock

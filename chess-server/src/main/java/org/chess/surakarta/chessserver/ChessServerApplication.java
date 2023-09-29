@@ -1,4 +1,4 @@
-package org.chess.surakarta.chessai.chessserver;
+package org.chess.surakarta.chessserver;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

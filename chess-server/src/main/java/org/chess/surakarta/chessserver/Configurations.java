@@ -1,4 +1,4 @@
-package org.chess.surakarta.chessai.chessserver;
+package org.chess.surakarta.chessserver;
 
 import org.chess.surakarta.chessai.action.MoveGenerator;
 import org.chess.surakarta.chessai.value.BasicChessABPruneEvaluator;

@@ -1,4 +1,4 @@
-package org.chess.surakarta.chessai.chessserver;
+package org.chess.surakarta.chessserver;
 
 import org.chess.surakarta.chessai.action.MoveGenerator;
 import org.chess.surakarta.chessai.entity.Board;
@@ -6,7 +6,6 @@ import org.chess.surakarta.chessai.entity.Move;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver;
 
 import java.util.*;
 

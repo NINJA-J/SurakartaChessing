@@ -1,7 +1,8 @@
 package org.chess.surakarta.action;
 
-import org.chess.surakarta.entity.Board;
-import org.chess.surakarta.entity.Move;
+import org.chess.surakarta.chessai.action.MoveGenerator;
+import org.chess.surakarta.chessai.entity.Board;
+import org.chess.surakarta.chessai.entity.Move;
 import org.junit.Assert;
 
 import java.util.ArrayList;
@@ -32,9 +33,7 @@ public class MoveGeneratorTest {
                 {0, 0, 0, 0, 1, 0},
                 {0, 0, 1, 2, 0, 2},
                 {2, 2, 2, 2, 0, 2}
-        }){{
-            setTurn(true);
-        }});
+        }, true));
         Assert.assertEquals(moves.get(0), Move.as(1, 4, 0, 4, true));
         Assert.assertEquals(moves.get(1), Move.as(3, 4, 4, 5, true));
         Assert.assertEquals(moves.get(2), Move.as(4, 2, 5, 1, true));
