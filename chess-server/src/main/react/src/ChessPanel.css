@@ -1,0 +1,35 @@
+.chess-frame-top {
+    height: 100px;
+    background-color: aqua;
+
+}
+
+.chess-frame-bottom {
+    height: 100px;
+    background-color: aqua;
+}
+
+.chess-frame-middle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chess-panel-left,
+.chess-panel-right {
+    flex: 1;
+    background-color: greenyellow;
+}
+
+.chess-panel-middle {
+    width: 400px;
+}
+
+.chess-board {
+    padding-top: 100%;
+    border-style: solid;
+    border-color: black;
+    background-image: url("./img/surakarta2.jpg");
+    background-size: cover;
+    position: relative;
+}

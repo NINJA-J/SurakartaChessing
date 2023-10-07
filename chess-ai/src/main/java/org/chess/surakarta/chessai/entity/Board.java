@@ -26,7 +26,7 @@ public class Board {
 
     public Board(int[][] board, boolean isBlackTurn) {
         for (int i = 0; i < 6; i++) {
-            System.arraycopy(board, 0, this.board, 0, 6);
+            System.arraycopy(board[i], 0, this.board[i], 0, 6);
             for (int j = 0; j < 6; j++) {
                 chessCount[board[i][j]]++;
             }
