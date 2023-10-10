@@ -9,20 +9,38 @@
     background-color: aqua;
 }
 
-.chess-frame-middle {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+@media screen and (max-width: 700px) {
+    .chess-frame-middle {
+        display: flex;
+        align-items: center;
+    }
+    .chess-panel-left,
+    .chess-panel-right {
+        width: 20%;
+    }
+    .chess-panel-middle {
+        width: 60%;
+    }
+}
+
+@media screen and (min-width: 701px) {
+    .chess-frame-middle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .chess-panel-middle {
+        width: 400px;
+    }
+    .chess-panel-left,
+    .chess-panel-right {
+        flex: 1;
+    }
 }
 
 .chess-panel-left,
 .chess-panel-right {
-    flex: 1;
     background-color: greenyellow;
-}
-
-.chess-panel-middle {
-    width: 400px;
 }
 
 .chess-board {

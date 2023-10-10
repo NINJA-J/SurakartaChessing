@@ -3,7 +3,6 @@ package org.chess.surakarta.chessai.action;
 import org.chess.surakarta.chessai.entity.Board;
 import org.chess.surakarta.chessai.entity.Pos;
 import org.chess.surakarta.chessai.entity.Move;
-import org.chess.surakarta.chessai.value.BasicChessABPruneEvaluator;
 import org.chess.surakarta.chessai.value.Evaluator;
 
 import java.util.*;
@@ -32,16 +31,31 @@ public class MoveGenerator {
                     {0, 1, 2, 3, 4, 5},
                     {-1, 21, -1, -1, 8, -1},
                     {-1, 20, -1, -1, 9, -1},
-                    {17, 16, 15, 14, 13, 12},
+                    {17, 16, 15, 14, 10, 12},
                     {-1, 18, -1, -1, 11, -1}
             },
             { //outerArc，外弧
                     {-1, -1, 23, 6, -1, -1},
                     {-1, -1, 22, 7, -1, -1},
                     {0, 1, 2, 3, 4, 5},
-                    {17, 16, 15, 14, 13, 12},
+                    {17, 16, 15, 9, 13, 12},
                     {-1, -1, 19, 10, -1, -1},
                     {-1, -1, 18, 11, -1, -1}
+            }
+    };
+
+    public static final int[][] arcIndexPair = new int[][]{
+            {
+                    -2, 22, -2, -2, 7, -2,
+                    -2, 4, -2, -2, 13, -2,
+                    -2, 10, -2, -2, 19, -2,
+                    -2, 16, -2, -2, 1, -2
+            },
+            {
+                    -2, -2, 21, 8, -2, -2,
+                    -2, -2, 3, 14, -2, -2,
+                    -2, -2, 9, 20, -2, -2,
+                    -2, -2, 15, 2, -2, -2
             }
     };
 
@@ -52,29 +66,36 @@ public class MoveGenerator {
     public List<Move> availableMove(Board board, int side) {
         List<Move> moves = new ArrayList<>();
         for (int arc = 0; arc <= 1; arc++) {
-            int arcS;
-            for (arcS = 0; arcS < 24; arcS++) {
-                if (board.getPos(arcChain[arc][arcS]) != Board.EMPTY) {
-                    break;
-                }
+            int arcS = 0, arcE;
+            while (arcS < 24 && board.getPos(arcChain[arc][arcS]) == Board.EMPTY) {
+                arcS++;
             }
-            // No points on arc
             if (arcS == 24) {
                 continue;
             }
-            int indL = -1, indS = arcS, indE;
-            for (indE = arcS + 1; indE < 24; indE++) {
+
+            arcE = arcS + 1;
+            while (arcE < 24 && board.getPos(arcChain[arc][arcE]) == Board.EMPTY) {
+                arcE++;
+            }
+            if (arcE == 24) {
+                continue;
+            }
+
+            int indL = arcS, indS = arcE, indE;
+            // Start with L=arcS, S=arcE, E=arcE_1
+            for (indE = indS + 1; indE < 24; indE++) {
                 if (board.getPos(arcChain[arc][indE]) == Board.EMPTY) {
                     continue;
                 }
 
                 // return true if not on cross
-                if (chkAddArcMove(board, side, moves, arc, indL, indS, indE)) {
-                    indL = indS;
-                    indS = indE;
-                }
+                chkAddArcMove(board, side, moves, arc, indL, indS, indE);
+                indL = indS;
+                indS = indE;
             }
             chkAddArcMove(board, side, moves, arc, indL, indS, arcS);
+            chkAddArcMove(board, side, moves, arc, indS, arcS, arcE);
             // if only 2 chess on arc, may exist same move
             if (moves.size() > 1 && moves.get(moves.size() - 1).equals(moves.get(moves.size() - 2))) {
                 moves.remove(moves.size() - 1);
@@ -101,33 +122,43 @@ public class MoveGenerator {
         this.prunEvaluator = evaluator;
     }
 
-    private boolean chkAddArcMove(Board board, int side, List<Move> moves, int arc, int indL, int indS, int indE) {
+    private void chkAddArcMove(Board board, int side, List<Move> moves, int arc, int indL, int indS, int indE) {
         // indL --- indS(cross) ^^^ indE[indS(cross)]
         // Check indL->indE
-        if (isSamePoint(indS, indE, arc)) {
-            chkAddMove(board, side, moves, arc, indL, indE, true);
-            return false;
-        } else {
-            chkAddMove(board, side, moves, arc, indS, indE, false);
-            return true;
-        }
-    }
-
-    private void chkAddMove(Board board, int side, List<Move> moves, int arc, int indS, int indE, boolean cross) {
+        int colorL = indL == -1 ? -1 : board.getPos(arcChain[arc][indL]);
         int colorS = board.getPos(arcChain[arc][indS]);
-        if (colorS != board.getPos(arcChain[arc][indE]) && indS / 6 != indE / 6) {
-            if (colorS != side) {
-                moves.add(Move.as(arcChain[arc][indE], arcChain[arc][indS], true));
-            } else if (!cross) {
-                moves.add(Move.as(arcChain[arc][indS], arcChain[arc][indE], true));
+        int colorE = board.getPos(arcChain[arc][indE]);
+
+        if (isSamePoint(indS, indE, arc)) {
+            if (colorL + colorE != 3) {
+                return;
+            }
+            if (colorL != side) {
+                moves.add(Move.arc(arcChain[arc][indS], arcChain[arc][indL]));
+            } else if (indL / 6 != indS / 6 || indL > indS) {
+                moves.add(Move.arc(arcChain[arc][indL], arcChain[arc][indS]));
+            }
+        } else if (isSamePoint(indL, indS, arc)) {
+            if (colorL + colorE != 3) {
+                return;
+            }
+            if (colorL == side) {
+                moves.add(Move.arc(arcChain[arc][indL], arcChain[arc][indE]));
+            } else if (indS / 6 != indE / 6 || indS > indE) {
+                moves.add(Move.arc(arcChain[arc][indE], arcChain[arc][indL]));
+            }
+        } else if (colorS + colorE == 3 && (indS / 6 != indE / 6 || indS > indE)) {
+            if (colorS == side) {
+                moves.add(Move.arc(arcChain[arc][indS], arcChain[arc][indE]));
+            } else {
+                moves.add(Move.arc(arcChain[arc][indE], arcChain[arc][indS]));
             }
         }
     }
 
+
     private boolean isSamePoint(int arcIndex1, int arcIndex2, int arc) {
-        int[] a = arcChain[arc][arcIndex1];
-        int[] b = arcChain[arc][arcIndex2];
-        return board2arcIndex[arc][a[0]][a[1]] == board2arcIndex[arc][b[0]][b[1]];
+        return arcIndexPair[arc][arcIndex2] == arcIndex1;
     }
 
     public Move bestMove(Board board) {

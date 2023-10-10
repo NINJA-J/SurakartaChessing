@@ -9,11 +9,15 @@ public class Move {
 
     private final boolean arc;
 
-    public static Move as(int[] from, int[] to, boolean arc) {
-        return as(from[0], from[1], to[0], to[1], arc);
+    public static Move arc(int[] from, int[] to) {
+        return arc(from[0], from[1], to[0], to[1], true);
     }
 
-    public static Move as(int xFrom, int yFrom, int xTo, int yTo, boolean arc) {
+    public static Move move(int[] from, int[] to) {
+        return arc(from[0], from[1], to[0], to[1], false);
+    }
+
+    public static Move arc(int xFrom, int yFrom, int xTo, int yTo, boolean arc) {
         return new Move(
                 new Pos(xFrom, yFrom),
                 new Pos(xTo, yTo),

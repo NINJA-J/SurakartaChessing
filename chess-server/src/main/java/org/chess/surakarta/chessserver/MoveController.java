@@ -11,9 +11,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-@Controller
+@RestController
 @CrossOrigin
-@RequestMapping("/move")
 public class MoveController {
 
     private final Map<String, Board> boardSessionMap = new HashMap<>();
@@ -24,7 +23,7 @@ public class MoveController {
     private MoveGenerator generator;
 
     @RequestMapping(value = "/board", method = RequestMethod.POST)
-    public @ResponseBody Response<ResponseInfo> bestMove(@RequestBody RequestInfo req) {
+    public Response<ResponseInfo> bestMove(@RequestBody RequestInfo req) {
         Board board = new Board(req.rawBoard, req.isPlayerTurn);
         Move m = generator.bestMove(board);
         board.move(m);
@@ -37,7 +36,6 @@ public class MoveController {
     }
 
     @RequestMapping("/session/register")
-    @ResponseBody
     public Response<ResponseInfo> registerSession(@RequestBody RequestInfo req) {
         String id = UUID.randomUUID().toString();
         if (boardSessionMap.containsKey(id)) {

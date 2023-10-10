@@ -1,6 +1,17 @@
 import React from 'react';
 import axios from "axios";
 
+const EMPTY = 0;
+const EMPTY_FROM = 3;
+const EMPTY_TO = 4;
+const PLAYER = 1;
+const PLAYER_FROM = 5;
+const PLAYER_TO = 6;
+const OPPONENT = 2;
+const OPPONENT_FROM = 7;
+const OPPONENT_TO = 8;
+
+
 class ChessBoard extends React.Component {
     constructor(props) {
         super(props);
@@ -8,12 +19,12 @@ class ChessBoard extends React.Component {
         let chess = props.chess;
         if (chess == null) {
             chess = [
-                [1, 1, 1, 1, 1, 1],
-                [1, 1, 1, 1, 1, 1],
-                [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-                [2, 2, 2, 2, 2, 2],
-                [2, 2, 2, 2, 2, 2]
+                [OPPONENT, OPPONENT, OPPONENT, OPPONENT, OPPONENT, OPPONENT],
+                [OPPONENT, OPPONENT, OPPONENT, OPPONENT, OPPONENT, OPPONENT],
+                [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+                [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+                [PLAYER, PLAYER, PLAYER, PLAYER, PLAYER, PLAYER],
+                [PLAYER, PLAYER, PLAYER, PLAYER, PLAYER, PLAYER]
             ]
         }
 
@@ -24,11 +35,12 @@ class ChessBoard extends React.Component {
             blackTurn: true,
             from: null,
             to: null,
+            compMove: null,
             waitingOpponent: false
         }
 
         if (this.state.sessionId == null && this.state.chess.length > 0) {
-            axios.post(`${process.env.REACT_APP_BACKEND_URL}/move/session/register`, {
+            axios.post(`${process.env.REACT_APP_BACKEND_URL}/session/register`, {
                 rawBoard: this.state.chess,
                 isPlayerTurn: this.state.blackTurn,
             }).then((response) => {
@@ -52,34 +64,55 @@ class ChessBoard extends React.Component {
         return m1.from.x === m2.from.x && m1.from.y === m2.from.y && m1.to.x === m2.to.x && m1.to.y === m2.to.y
     }
 
-
     onChessClick = (x, y) => {
+        if (this.state.waitingOpponent) {
+            return
+        }
         // console.log(`state: ${JSON.stringify(this.state)}`)
         const from = this.state.from
-        if (this.state.from == null) {
+        const chess = this.state.chess
+        if (from == null) {
+            if (this.state.chess[x][y] !== PLAYER) {
+                console.info(`Skip from ${x} ${y}`)
+                return;
+            }
             console.info(`Set from ${x} ${y}`)
-            this.setState({from: {x: x, y: y}})
+            chess[x][y] = PLAYER_FROM;
+            this.setState({from: {x: x, y: y}, chess: chess})
         } else if (from.x === x && from.y === y) {
             console.info(`Unset from ${x} ${y}`)
-            this.setState({from: null})
+            chess[x][y] = PLAYER;
+            this.setState({from: null, chess: chess})
         } else {
+            if (this.state.compMove != null) {
+                chess[this.state.compMove.from.x][this.state.compMove.from.y] = EMPTY;
+                chess[this.state.compMove.to.x][this.state.compMove.to.y] = OPPONENT;
+                this.setState({compMove: null, chess: chess})
+            }
+
             const move = {
-                from: this.state.from,
+                from: from,
                 to: {x: x, y: y}
             }
             console.info(`Make move ${JSON.stringify(move)}`)
             if (!this.state.availableMoves.some((m) => this.moveEquals(m, move))) {
-                console.warn(`Invalid move ${JSON.stringify(move)}`)
-                this.setState({from: null})
+                console.warn(`Invalid move ${JSON.stringify(move)} ${JSON.stringify(this.state.availableMoves)}`)
+                chess[from.x][from.y] = PLAYER;
+                this.setState({from: null, chess: chess})
                 return;
             }
-            const chess = this.state.chess;
-            chess[move.to.y][move.to.x] = chess[move.from.y][move.from.x];
-            chess[move.from.y][move.from.x] = 0;
+            chess[move.from.x][move.from.y] = PLAYER_FROM;
+            if (chess[move.to.x][move.to.y] === EMPTY) {
+                chess[move.to.x][move.to.y] = EMPTY_TO;
+            } else if (chess[move.to.x][move.to.y] === OPPONENT) {
+                chess[move.to.x][move.to.y] = OPPONENT_TO;
+            }
             this.setState({
                 chess: chess,
+                from: null,
                 waitingOpponent: true
             });
+
             axios.post(`${process.env.REACT_APP_BACKEND_URL}/session/${this.state.sessionId}/move`, {
                 playerMove: move,
                 doComputerMove: true,
@@ -87,13 +120,16 @@ class ChessBoard extends React.Component {
                 response = response.data;
                 const {compMove, nextAvailableMoves} = response.data
                 console.info(`Response move ${JSON.stringify(response.data)}`)
+                chess[move.from.x][move.from.y] = EMPTY;
+                chess[move.to.x][move.to.y] = PLAYER
                 if (compMove != null) {
-                    chess[compMove.to.y][compMove.to.x] = chess[compMove.from.y][compMove.from.x];
-                    chess[compMove.from.y][compMove.from.x] = 0;
+                    chess[compMove.from.x][compMove.from.y] = EMPTY_FROM;
+                    chess[compMove.to.x][compMove.to.y] = OPPONENT_TO;
                 }
                 nextAvailableMoves.forEach((e) => delete e['arc'])
                 this.setState({
                     chess: chess,
+                    compMove: compMove,
                     availableMoves: nextAvailableMoves,
                     waitingOpponent: false
                 })
@@ -101,28 +137,17 @@ class ChessBoard extends React.Component {
         }
     }
 
-    shouldComponentUpdate(nextProps: Readonly<P>, nextState: Readonly<S>, nextContext: any): boolean {
-        console.debug("Calling shouldComponentUpdate, nextState: " + nextState)
-        return this.state.chess !== nextState.chess
-            || this.state.blackTurn !== nextState.blackTurn
-            || (this.state.from != null && nextState.from == null);
-    }
-
     render() {
-        console.debug("Chessboard rendering")
+        console.debug(`Chessboard rendering chess=${this.state.chess}`)
 
         return <div className="chess-board">
             {this.state.chess.flatMap((chessRow, i) => chessRow.map((type, j) =>
                 <Chess onChessClick={this.onChessClick} size={0.7}
-                       type={type} x={j} y={i} isSelected={false}
+                       type={type} x={i} y={j} isSelected={false}
                        waitingOpponent={this.state.waitingOpponent}/>)
             )}
         </div>;
     }
-}
-
-const stateMap = {
-    0: "empty", 1: "black", 2: "red"
 }
 
 class Chess extends React.Component {
@@ -132,7 +157,7 @@ class Chess extends React.Component {
 
         this.state = {
             size: props.size,
-            type: stateMap[props.type],
+            type: props.type,
             isStressed: false,
             isSelected: props.isSelected,
             waitingOpponent: props.waitingOpponent,
@@ -143,54 +168,72 @@ class Chess extends React.Component {
 
     static getDerivedStateFromProps(nextProps) {
         return {
-            size: nextProps.size,
-            isSelected: nextProps.isSelected,
-            waitingOpponent: nextProps.waitingOpponent
+            type: nextProps.type,
         }
     }
 
     onClick = () => {
         console.debug(`Chess ${this.state.x} ${this.state.y} clicked`)
         this.props.onChessClick(this.state.x, this.state.y)
-        if (!this.state.waitingOpponent) {
-            this.setState({isSelected: !this.state.isSelected})
-        }
     }
 
     onMoveOver = () => {
         console.debug(`Chess ${this.state.x} ${this.state.y} move over`)
-        if (!this.state.isSelected) {
-            this.setState({isStressed: true})
-        }
+        this.setState({isStressed: true})
     }
 
     onMoveOut = () => {
         console.debug(`Chess ${this.state.x} ${this.state.y} move out`)
-        if (!this.state.isSelected) {
-            this.setState({isStressed: false})
-        }
+        this.setState({isStressed: false})
     }
 
     render() {
-        console.debug(`Chess rendering ${JSON.stringify(this.state)}`)
-        // const xl = 0, xr = 0, yl = 0, yr = 0;
-        const xl = -0.8, xr = -1.7, yl = -1, yr = -1;
+        const yl = -0.8, yr = -1.7, xl = -1, xr = -1;
 
-        const realSize = (this.state.isSelected || this.state.isStressed) && this.state.type !== "empty" ?
-            (this.state.size / 2 + 0.5) : this.state.size
-        const style = {
+        let realSize = 0.85;
+        let style = {}
+        switch (this.state.type) {
+            case PLAYER:
+                style = {backgroundColor: "blue"};
+                realSize = this.state.isStressed ? 0.85 : 0.7;
+                break;
+            case PLAYER_FROM:
+                style = {backgroundColor: "blue", board: "5px dashed greenyellow"};
+                break;
+            case PLAYER_TO:
+                style = {backgroundColor: "blue", board: "5px solid red"};
+                break;
+            case OPPONENT:
+                style = {backgroundColor: "yellow"};
+                realSize = this.state.isStressed ? 0.85 : 0.7;
+                break;
+            case OPPONENT_FROM:
+                style = {backgroundColor: "yellow", board: "5px dashed greenyellow"};
+                break;
+            case OPPONENT_TO:
+                style = {backgroundColor: "yellow", board: "5px solid red"};
+                break;
+            case EMPTY:
+                style = {backgroundColor: "gray", opacity: this.state.isStressed ? 0.75: 0};
+                realSize = 0.7;
+                break;
+            case EMPTY_FROM:
+                style = {backgroundColor: "gray", opacity: 0.75, board: "5px dashed greenyellow"};
+                realSize = 0.7;
+                break;
+            case EMPTY_TO:
+                style = {backgroundColor: "gray", opacity: 0.75, board: "5px solid red"};
+                realSize = 0.7;
+                break;
+            default:  break;
+        }
+
+        style = {...style,
             position: 'absolute',
-            top: "" + ((this.state.y + 2 - realSize / 2) / 9 * (100 - yl - yr) + yl) + "%",
-            left: "" + ((this.state.x + 2 - realSize / 2) / 9 * (100 - xl - xr) + xl) + "%",
+            top: "" + ((this.state.x + 2 - realSize / 2) / 9 * (100 - xl - xr) + xl) + "%",
+            left: "" + ((this.state.y + 2 - realSize / 2) / 9 * (100 - yl - yr) + yl) + "%",
             height: "" + (realSize / 9 * 100) + "%",
             width: "" + (realSize / 9 * 100) + "%",
-        }
-        // console.log(style)
-        if (this.state.type === "empty") {
-            style.backgroundColor = "gray"
-            style.opacity = this.state.isStressed ? 0.75 : 0.0
-        } else {
-            style.backgroundColor = this.state.type === "black" ? "blue" : "yellow"
         }
 
         return <div className="chess"
