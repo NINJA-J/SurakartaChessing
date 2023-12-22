@@ -1,5 +1,7 @@
 package org.chess.surakarta.chessai.entity;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Objects;
 
 public class Move {
@@ -18,6 +20,7 @@ public class Move {
     }
 
     public static Move arc(int xFrom, int yFrom, int xTo, int yTo, boolean arc) {
+        new ArrayList<>().subList()
         return new Move(
                 new Pos(xFrom, yFrom),
                 new Pos(xTo, yTo),
